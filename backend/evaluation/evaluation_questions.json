@@ -1,0 +1,182 @@
+[
+  {
+    "id": "simple_01",
+    "difficulty": "simple",
+    "question": "How can I track the status of my order?",
+    "expected_intents": ["track_order"]
+  },
+  {
+    "id": "simple_02",
+    "difficulty": "simple",
+    "question": "What steps do I follow to cancel an order?",
+    "expected_intents": ["cancel_order"]
+  },
+  {
+    "id": "simple_03",
+    "difficulty": "simple",
+    "question": "How do I change an order I already placed?",
+    "expected_intents": ["change_order"]
+  },
+  {
+    "id": "simple_04",
+    "difficulty": "simple",
+    "question": "How can I place a new order?",
+    "expected_intents": ["place_order"]
+  },
+  {
+    "id": "simple_05",
+    "difficulty": "simple",
+    "question": "How do I ask for a refund?",
+    "expected_intents": ["get_refund"]
+  },
+  {
+    "id": "simple_06",
+    "difficulty": "simple",
+    "question": "How can I check the status of my refund?",
+    "expected_intents": ["track_refund"]
+  },
+  {
+    "id": "simple_07",
+    "difficulty": "simple",
+    "question": "Where can I read the refund policy?",
+    "expected_intents": ["check_refund_policy"]
+  },
+  {
+    "id": "simple_08",
+    "difficulty": "simple",
+    "question": "How long does delivery usually take?",
+    "expected_intents": ["delivery_period"]
+  },
+  {
+    "id": "simple_09",
+    "difficulty": "simple",
+    "question": "What delivery methods are available?",
+    "expected_intents": ["delivery_options"]
+  },
+  {
+    "id": "simple_10",
+    "difficulty": "simple",
+    "question": "How do I report a problem with my payment?",
+    "expected_intents": ["payment_issue"]
+  },
+  {
+    "id": "ambiguous_01",
+    "difficulty": "ambiguous",
+    "question": "I bought something recently, but I cannot tell where it is now.",
+    "expected_intents": ["track_order"]
+  },
+  {
+    "id": "ambiguous_02",
+    "difficulty": "ambiguous",
+    "question": "I changed my mind about a purchase and need it stopped.",
+    "expected_intents": ["cancel_order"]
+  },
+  {
+    "id": "ambiguous_03",
+    "difficulty": "ambiguous",
+    "question": "There is something wrong with what I selected, and I need to adjust it.",
+    "expected_intents": ["change_order"]
+  },
+  {
+    "id": "ambiguous_04",
+    "difficulty": "ambiguous",
+    "question": "I am ready to buy a few items but do not know where to start.",
+    "expected_intents": ["place_order"]
+  },
+  {
+    "id": "ambiguous_05",
+    "difficulty": "ambiguous",
+    "question": "I want my money returned for something I purchased.",
+    "expected_intents": ["get_refund"]
+  },
+  {
+    "id": "ambiguous_06",
+    "difficulty": "ambiguous",
+    "question": "I sent in a money-back request and want to know what happened to it.",
+    "expected_intents": ["track_refund"]
+  },
+  {
+    "id": "ambiguous_07",
+    "difficulty": "ambiguous",
+    "question": "Before asking for my money back, I want to understand the rules.",
+    "expected_intents": ["check_refund_policy"]
+  },
+  {
+    "id": "ambiguous_08",
+    "difficulty": "ambiguous",
+    "question": "I need to know when the package is likely to reach me.",
+    "expected_intents": ["delivery_period"]
+  },
+  {
+    "id": "ambiguous_09",
+    "difficulty": "ambiguous",
+    "question": "I want to see the ways my purchase can be sent to me.",
+    "expected_intents": ["delivery_options"]
+  },
+  {
+    "id": "ambiguous_10",
+    "difficulty": "ambiguous",
+    "question": "The checkout charge did not go through properly, and I need help.",
+    "expected_intents": ["payment_issue"]
+  },
+  {
+    "id": "complex_01",
+    "difficulty": "complex",
+    "question": "My order has not arrived, and I also want to know whether I can cancel it.",
+    "expected_intents": ["track_order", "cancel_order"]
+  },
+  {
+    "id": "complex_02",
+    "difficulty": "complex",
+    "question": "I want to return my purchase and find out when the refund will reach me.",
+    "expected_intents": ["get_refund", "track_refund"]
+  },
+  {
+    "id": "complex_03",
+    "difficulty": "complex",
+    "question": "I need to change my order and then confirm its current status.",
+    "expected_intents": ["change_order", "track_order"]
+  },
+  {
+    "id": "complex_04",
+    "difficulty": "complex",
+    "question": "Can you explain the delivery choices and how long each option may take?",
+    "expected_intents": ["delivery_options", "delivery_period"]
+  },
+  {
+    "id": "complex_05",
+    "difficulty": "complex",
+    "question": "My payment failed, and I want to know if I can still place the order.",
+    "expected_intents": ["payment_issue", "place_order"]
+  },
+  {
+    "id": "complex_06",
+    "difficulty": "complex",
+    "question": "I need to check the refund rules before I request my money back.",
+    "expected_intents": ["check_refund_policy", "get_refund"]
+  },
+  {
+    "id": "complex_07",
+    "difficulty": "complex",
+    "question": "I cancelled an order and now want to check whether my refund is moving forward.",
+    "expected_intents": ["cancel_order", "track_refund"]
+  },
+  {
+    "id": "complex_08",
+    "difficulty": "complex",
+    "question": "I want to place an order but need to compare the delivery options first.",
+    "expected_intents": ["place_order", "delivery_options"]
+  },
+  {
+    "id": "complex_09",
+    "difficulty": "complex",
+    "question": "I changed my order and need to know whether that affects when it will arrive.",
+    "expected_intents": ["change_order", "delivery_period"]
+  },
+  {
+    "id": "complex_10",
+    "difficulty": "complex",
+    "question": "I paid for an order, but now I want to cancel it and understand the refund process.",
+    "expected_intents": ["payment_issue", "cancel_order", "get_refund"]
+  }
+]

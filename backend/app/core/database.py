@@ -57,3 +57,10 @@ async def create_tables():
                 "WHERE source_type IS NOT NULL AND source_id IS NOT NULL"
             )
         )
+        await connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                "uq_chunks_document_id_chunk_index "
+                "ON chunks (document_id, chunk_index)"
+            )
+        )
