@@ -1,0 +1,22 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="fastapi" />
+          <option value="uvicorn" />
+          <option value="pydantic" />
+          <option value="sqlalchemy" />
+          <option value="psycopg2-binary" />
+          <option value="python-jose" />
+          <option value="passlib" />
+          <option value="bcrypt" />
+          <option value="python-multipart" />
+          <option value="strawberry-graphql" />
+          <option value="dotenv" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
