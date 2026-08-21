@@ -50,8 +50,8 @@ export const navigationGroups: NavigationGroup[] = [
   {
     title: "확장 RAG",
     items: [
-      { id: "graphrag", label: "GraphRAG" },
-      { id: "multimodal", label: "Multimodal RAG" }
+      { id: "multimodal", label: "Multimodal RAG" },
+      { id: "graphrag", label: "Agentic + Multimodal" }
     ]
   }
 ];

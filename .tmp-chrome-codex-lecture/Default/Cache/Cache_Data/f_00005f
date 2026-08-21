@@ -1,0 +1,248 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/lecture/BasicSection.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f1bae918"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+const indexingSteps = [
+  { title: "Documents", role: "외부 지식 원본" },
+  { title: "Chunking", role: "긴 문서를 작은 검색 단위로 분할" },
+  { title: "Embedding", role: "문장의 의미를 벡터로 표현" },
+  { title: "Vector DB", role: "벡터 저장과 유사도 검색" }
+];
+const runtimeSteps = [
+  { title: "Question", role: "사용자 질문" },
+  { title: "Retrieval", role: "관련 정보 검색" },
+  { title: "Context", role: "LLM에 전달할 근거" },
+  { title: "LLM", role: "질문과 근거를 함께 읽음" },
+  { title: "Answer", role: "근거 기반 답변 생성" }
+];
+function MiniFlow({ title, subtitle, steps }) {
+  return /* @__PURE__ */ jsxDEV("section", { className: "basic-flow-group", children: [
+    /* @__PURE__ */ jsxDEV("header", { children: [
+      /* @__PURE__ */ jsxDEV("span", { children: title }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 20,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("strong", { children: subtitle }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 21,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+      lineNumber: 19,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "basic-flow-line", children: steps.map(
+      (step, index) => /* @__PURE__ */ jsxDEV("div", { className: "basic-flow-item", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "knowledge-node", children: [
+          /* @__PURE__ */ jsxDEV("strong", { children: step.title }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 27,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { children: step.role }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 28,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 26,
+          columnNumber: 13
+        }, this),
+        index < steps.length - 1 && /* @__PURE__ */ jsxDEV("div", { className: "knowledge-arrow", children: "→" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 30,
+          columnNumber: 42
+        }, this)
+      ] }, step.title, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 25,
+        columnNumber: 9
+      }, this)
+    ) }, void 0, false, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+      lineNumber: 23,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+    lineNumber: 18,
+    columnNumber: 5
+  }, this);
+}
+_c = MiniFlow;
+export function BasicSection() {
+  return /* @__PURE__ */ jsxDEV("section", { className: "lecture-section basic-lecture", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "section-kicker", children: "RAG 기본" }, void 0, false, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+      lineNumber: 41,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "basic-lecture-heading", children: [
+      /* @__PURE__ */ jsxDEV("span", { children: "RAG BASIC" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 43,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("h1", { children: "왜 LLM에게 검색이 필요할까?" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 44,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { children: "LLM 내부 지식만으로 부족할 때, 외부 지식을 검색해 Context로 제공합니다." }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 45,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+      lineNumber: 42,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "basic-teaching-canvas", "aria-label": "RAG basic flow", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "basic-principle-strip", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "WHY" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 51,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: "LLM 내부 지식만으로는 최신/개별 정보를 모를 수 있음" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 52,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 50,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("b", { children: "→" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 54,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "PRINCIPLE" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 56,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: "외부 정보를 검색해 Retrieved Context로 제공" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 57,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 55,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 49,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(MiniFlow, { title: "INDEXING", subtitle: "검색 전에 미리 준비", steps: indexingSteps }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 60,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "chunking-example", "aria-label": "Chunking concept example", children: [
+        /* @__PURE__ */ jsxDEV("span", { children: "CHUNKING" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 62,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("strong", { children: "긴 Document" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 63,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("b", { children: "↓" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 64,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("em", { children: "Chunk 1" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 66,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("em", { children: "Chunk 2" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 67,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("em", { children: "Chunk 3" }, void 0, false, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+            lineNumber: 68,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+          lineNumber: 65,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 61,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(MiniFlow, { title: "RETRIEVAL + GENERATION", subtitle: "질문이 들어온 뒤 실행", steps: runtimeSteps }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 71,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+      lineNumber: 48,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("p", { className: "lecture-message", children: [
+      /* @__PURE__ */ jsxDEV("span", { children: "KEY POINT" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+        lineNumber: 75,
+        columnNumber: 9
+      }, this),
+      "외부 지식을 검색해 LLM의 Context로 사용한다."
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+      lineNumber: 74,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx",
+    lineNumber: 40,
+    columnNumber: 5
+  }, this);
+}
+_c2 = BasicSection;
+var _c, _c2;
+$RefreshReg$(_c, "MiniFlow");
+$RefreshReg$(_c2, "BasicSection");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/bootcamp/mini_project/frontend/src/components/lecture/BasicSection.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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TUFBTTtBQUFBLFNBRHZCO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FHQTtBQUFBLE9BckNGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FzQ0E7QUFFSjtBQUFDVSxNQTFDZUQ7QUFBWSxJQUFBRCxJQUFBRTtBQUFBLGFBQUFGLElBQUE7QUFBQSxhQUFBRSxLQUFBIiwibmFtZXMiOlsiaW5kZXhpbmdTdGVwcyIsInRpdGxlIiwicm9sZSIsInJ1bnRpbWVTdGVwcyIsIk1pbmlGbG93Iiwic3VidGl0bGUiLCJzdGVwcyIsIm1hcCIsInN0ZXAiLCJpbmRleCIsImxlbmd0aCIsIl9jIiwiQmFzaWNTZWN0aW9uIiwiX2MyIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkJhc2ljU2VjdGlvbi50c3giXSwic291cmNlc0NvbnRlbnQiOlsiY29uc3QgaW5kZXhpbmdTdGVwcyA9IFtcbiAgeyB0aXRsZTogXCJEb2N1bWVudHNcIiwgcm9sZTogXCLsmbjrtoAg7KeA7IudIOybkOuzuFwiIH0sXG4gIHsgdGl0bGU6IFwiQ2h1bmtpbmdcIiwgcm9sZTogXCLquLQg66y47ISc66W8IOyekeydgCDqsoDsg4kg64uo7JyE66GcIOu2hO2VoFwiIH0sXG4gIHsgdGl0bGU6IFwiRW1iZWRkaW5nXCIsIHJvbGU6IFwi66y47J6l7J2YIOydmOuvuOulvCDrsqHthLDroZwg7ZGc7ZiEXCIgfSxcbiAgeyB0aXRsZTogXCJWZWN0b3IgREJcIiwgcm9sZTogXCLrsqHthLAg7KCA7J6l6rO8IOycoOyCrOuPhCDqsoDsg4lcIiB9XG5dO1xuXG5jb25zdCBydW50aW1lU3RlcHMgPSBbXG4gIHsgdGl0bGU6IFwiUXVlc3Rpb25cIiwgcm9sZTogXCLsgqzsmqnsnpAg7KeI66y4XCIgfSxcbiAgeyB0aXRsZTogXCJSZXRyaWV2YWxcIiwgcm9sZTogXCLqtIDroKgg7KCV67O0IOqygOyDiVwiIH0sXG4gIHsgdGl0bGU6IFwiQ29udGV4dFwiLCByb2xlOiBcIkxMTeyXkCDsoITri6ztlaAg6re86rGwXCIgfSxcbiAgeyB0aXRsZTogXCJMTE1cIiwgcm9sZTogXCLsp4jrrLjqs7wg6re86rGw66W8IO2VqOq7mCDsnb3snYxcIiB9LFxuICB7IHRpdGxlOiBcIkFuc3dlclwiLCByb2xlOiBcIuq3vOqxsCDquLDrsJgg64u167OAIOyDneyEsVwiIH1cbl07XG5cbmZ1bmN0aW9uIE1pbmlGbG93KHsgdGl0bGUsIHN1YnRpdGxlLCBzdGVwcyB9OiB7IHRpdGxlOiBzdHJpbmc7IHN1YnRpdGxlOiBzdHJpbmc7IHN0ZXBzOiB0eXBlb2YgaW5kZXhpbmdTdGVwcyB9KSB7XG4gIHJldHVybiAoXG4gICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwiYmFzaWMtZmxvdy1ncm91cFwiPlxuICAgICAgPGhlYWRlcj5cbiAgICAgICAgPHNwYW4+e3RpdGxlfTwvc3Bhbj5cbiAgICAgICAgPHN0cm9uZz57c3VidGl0bGV9PC9zdHJvbmc+XG4gICAgICA8L2hlYWRlcj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmFzaWMtZmxvdy1saW5lXCI+XG4gICAgICAgIHtzdGVwcy5tYXAoKHN0ZXAsIGluZGV4KSA9PiAoXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJiYXNpYy1mbG93LWl0ZW1cIiBrZXk9e3N0ZXAudGl0bGV9PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJrbm93bGVkZ2Utbm9kZVwiPlxuICAgICAgICAgICAgICA8c3Ryb25nPntzdGVwLnRpdGxlfTwvc3Ryb25nPlxuICAgICAgICAgICAgICA8c3Bhbj57c3RlcC5yb2xlfTwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAge2luZGV4IDwgc3RlcHMubGVuZ3RoIC0gMSAmJiA8ZGl2IGNsYXNzTmFtZT1cImtub3dsZWRnZS1hcnJvd1wiPuKGkjwvZGl2Pn1cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgKSl9XG4gICAgICA8L2Rpdj5cbiAgICA8L3NlY3Rpb24+XG4gICk7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBCYXNpY1NlY3Rpb24oKSB7XG4gIHJldHVybiAoXG4gICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwibGVjdHVyZS1zZWN0aW9uIGJhc2ljLWxlY3R1cmVcIj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwic2VjdGlvbi1raWNrZXJcIj5SQUcg6riw67O4PC9kaXY+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImJhc2ljLWxlY3R1cmUtaGVhZGluZ1wiPlxuICAgICAgICA8c3Bhbj5SQUcgQkFTSUM8L3NwYW4+XG4gICAgICAgIDxoMT7smZwgTExN7JeQ6rKMIOqygOyDieydtCDtlYTsmpTtlaDquYw/PC9oMT5cbiAgICAgICAgPHA+TExNIOuCtOu2gCDsp4Dsi53rp4zsnLzroZwg67aA7KGx7ZWgIOuVjCwg7Jm467aAIOyngOyLneydhCDqsoDsg4ntlbQgQ29udGV4dOuhnCDsoJzqs7Xtlanri4jri6QuPC9wPlxuICAgICAgPC9kaXY+XG5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmFzaWMtdGVhY2hpbmctY2FudmFzXCIgYXJpYS1sYWJlbD1cIlJBRyBiYXNpYyBmbG93XCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYmFzaWMtcHJpbmNpcGxlLXN0cmlwXCI+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxzcGFuPldIWTwvc3Bhbj5cbiAgICAgICAgICAgIDxzdHJvbmc+TExNIOuCtOu2gCDsp4Dsi53rp4zsnLzroZzripQg7LWc7IugL+qwnOuzhCDsoJXrs7Trpbwg66qo66W8IOyImCDsnojsnYw8L3N0cm9uZz5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8Yj7ihpI8L2I+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxzcGFuPlBSSU5DSVBMRTwvc3Bhbj5cbiAgICAgICAgICAgIDxzdHJvbmc+7Jm467aAIOygleuztOulvCDqsoDsg4ntlbQgUmV0cmlldmVkIENvbnRleHTroZwg7KCc6rO1PC9zdHJvbmc+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvZGl2PlxuICAgICAgICA8TWluaUZsb3cgdGl0bGU9XCJJTkRFWElOR1wiIHN1YnRpdGxlPVwi6rKA7IOJIOyghOyXkCDrr7jrpqwg7KSA67mEXCIgc3RlcHM9e2luZGV4aW5nU3RlcHN9IC8+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiY2h1bmtpbmctZXhhbXBsZVwiIGFyaWEtbGFiZWw9XCJDaHVua2luZyBjb25jZXB0IGV4YW1wbGVcIj5cbiAgICAgICAgICA8c3Bhbj5DSFVOS0lORzwvc3Bhbj5cbiAgICAgICAgICA8c3Ryb25nPuq4tCBEb2N1bWVudDwvc3Ryb25nPlxuICAgICAgICAgIDxiPuKGkzwvYj5cbiAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgPGVtPkNodW5rIDE8L2VtPlxuICAgICAgICAgICAgPGVtPkNodW5rIDI8L2VtPlxuICAgICAgICAgICAgPGVtPkNodW5rIDM8L2VtPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2Rpdj5cbiAgICAgICAgPE1pbmlGbG93IHRpdGxlPVwiUkVUUklFVkFMICsgR0VORVJBVElPTlwiIHN1YnRpdGxlPVwi7KeI66y47J20IOuTpOyWtOyYqCDrkqQg7Iuk7ZaJXCIgc3RlcHM9e3J1bnRpbWVTdGVwc30gLz5cbiAgICAgIDwvZGl2PlxuXG4gICAgICA8cCBjbGFzc05hbWU9XCJsZWN0dXJlLW1lc3NhZ2VcIj5cbiAgICAgICAgPHNwYW4+S0VZIFBPSU5UPC9zcGFuPlxuICAgICAgICDsmbjrtoAg7KeA7Iud7J2EIOqygOyDie2VtCBMTE3snZggQ29udGV4dOuhnCDsgqzsmqntlZzri6QuXG4gICAgICA8L3A+XG4gICAgPC9zZWN0aW9uPlxuICApO1xufVxuIl0sImZpbGUiOiJDOi9ib290Y2FtcC9taW5pX3Byb2plY3QvZnJvbnRlbmQvc3JjL2NvbXBvbmVudHMvbGVjdHVyZS9CYXNpY1NlY3Rpb24udHN4In0=

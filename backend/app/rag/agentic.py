@@ -60,6 +60,29 @@ def merge_candidates(
             existing[candidate.chunk_id] = candidate
 
 
+def select_accumulated_context(
+    round_results: list[list[RerankedResult]],
+    top_k: int,
+) -> list[RerankedResult]:
+    selected: list[RerankedResult] = []
+    seen_chunk_ids: set[int] = set()
+    max_depth = max((len(results) for results in round_results), default=0)
+
+    for index in range(max_depth):
+        for results in round_results:
+            if index >= len(results):
+                continue
+            result = results[index]
+            if result.chunk_id in seen_chunk_ids:
+                continue
+            selected.append(result)
+            seen_chunk_ids.add(result.chunk_id)
+            if len(selected) >= top_k:
+                return selected
+
+    return selected
+
+
 def build_search_history_entry(
     search_round: int,
     query: str,
@@ -78,6 +101,8 @@ def build_search_history_entry(
         "reason": evaluation.reason,
         "next_query": evaluation.next_query,
         "supporting_chunk_ids": evaluation.supporting_chunk_ids,
+        "covered_requirements": evaluation.covered_requirements,
+        "missing_requirements": evaluation.missing_requirements,
     }
 
 
@@ -114,6 +139,7 @@ async def run_agentic_rag(
     final_results: list[RerankedResult] = []
     evaluations: list[ContextEvaluationResult] = []
     merged_candidates: dict[int, SearchResult] = {}
+    round_contexts: list[list[RerankedResult]] = []
 
     await emit_event(
         steps,
@@ -145,15 +171,17 @@ async def run_agentic_rag(
         retrieval_ms += round_retrieval_ms
         merge_candidates(merged_candidates, candidates)
 
-        final_results, round_rerank_ms = await rerank_round_step(
+        round_results, round_rerank_ms = await rerank_round_step(
             steps,
             event_callback,
-            normalized_question,
-            list(merged_candidates.values()),
+            current_query,
+            candidates,
             top_k,
             search_round,
         )
         rerank_ms += round_rerank_ms
+        round_contexts.append(round_results)
+        final_results = select_accumulated_context(round_contexts, top_k)
 
         evaluation, round_evaluation_ms = await context_evaluation_step(
             steps,
@@ -161,6 +189,7 @@ async def run_agentic_rag(
             normalized_question,
             final_results,
             search_round,
+            current_query,
         )
         evaluations.append(evaluation)
         evaluation_ms += round_evaluation_ms
@@ -189,9 +218,13 @@ async def run_agentic_rag(
             event_callback,
             evaluation.next_query,
             evaluation.reason,
+            evaluation.missing_requirements,
             search_round,
         )
         current_query = evaluation.next_query
+
+    if evaluations and not evaluations[-1].sufficient and completed_rounds == max_search_rounds:
+        await retry_limit_step(steps, event_callback, completed_rounds, max_search_rounds)
 
     context, context_build_ms = await timed_step(
         steps,
@@ -323,7 +356,7 @@ async def search_round_step(
 async def rerank_round_step(
     steps: list[dict[str, Any]],
     callback: EventCallback | None,
-    question: str,
+    query: str,
     candidates: list[SearchResult],
     top_k: int,
     search_round: int,
@@ -336,7 +369,7 @@ async def rerank_round_step(
         search_round=search_round,
     )
     started_at = time.perf_counter()
-    results = rerank_chunks(question, candidates, top_k=top_k)
+    results = rerank_chunks(query, candidates, top_k=top_k)
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     await emit_event(
         steps,
@@ -356,6 +389,7 @@ async def context_evaluation_step(
     question: str,
     chunks: list[RerankedResult],
     search_round: int,
+    search_query: str | None = None,
 ) -> tuple[ContextEvaluationResult, int]:
     await emit_event(
         steps,
@@ -365,7 +399,7 @@ async def context_evaluation_step(
         search_round=search_round,
     )
     started_at = time.perf_counter()
-    result = await evaluate_context(question, chunks)
+    result = await evaluate_context(question, chunks, search_query)
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     await emit_event(
         steps,
@@ -377,6 +411,8 @@ async def context_evaluation_step(
         sufficient=result.sufficient,
         reason=result.reason,
         next_query=result.next_query,
+        covered_requirements=result.covered_requirements,
+        missing_requirements=result.missing_requirements,
     )
     return result, elapsed_ms
 
@@ -390,6 +426,7 @@ async def query_refinement_step(
     callback: EventCallback | None,
     next_query: str,
     reason: str,
+    missing_requirements: list[str],
     search_round: int,
 ) -> None:
     started_at = time.perf_counter()
@@ -400,6 +437,7 @@ async def query_refinement_step(
         "started",
         search_round=search_round,
         reason=reason,
+        missing_requirements=missing_requirements,
     )
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     await emit_event(
@@ -411,4 +449,22 @@ async def query_refinement_step(
         search_round=search_round,
         query=next_query,
         reason=reason,
+        missing_requirements=missing_requirements,
+    )
+
+
+async def retry_limit_step(
+    steps: list[dict[str, Any]],
+    callback: EventCallback | None,
+    completed_rounds: int,
+    max_search_rounds: int,
+) -> None:
+    await emit_event(
+        steps,
+        callback,
+        "retry_limit",
+        "completed",
+        search_round=completed_rounds,
+        max_search_rounds=max_search_rounds,
+        reason="Max search rounds reached. Use best available context.",
     )

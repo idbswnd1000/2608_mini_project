@@ -42,22 +42,6 @@ export function lectureControlWsUrl() {
   return `${protocol}//${window.location.hostname}:8000/lecture-control/ws`;
 }
 
-export async function sendLectureAudio(audioBlob: Blob): Promise<LectureCommandResult> {
-  const formData = new FormData();
-  formData.append("audio", audioBlob, "lecture-command.webm");
-  const response = await fetch("/lecture-control/audio", {
-    method: "POST",
-    body: formData
-  });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Audio command failed: ${response.status}`);
-  }
-
-  return response.json() as Promise<LectureCommandResult>;
-}
-
 export async function sendLectureCommand(action: LectureAction, transcript = "") {
   const response = await fetch("/lecture-control/command", {
     method: "POST",

@@ -4,7 +4,7 @@ import { RagResponse, RagType, runRagDemo } from "../services/api";
 const ragTypes: RagType[] = ["naive", "advanced", "agentic"];
 
 export function PlaygroundPage() {
-  const [question, setQuestion] = useState("How can I track my order?");
+  const [question, setQuestion] = useState("My order still has not arrived. Can I cancel it, and can I get a refund?");
   const [ragType, setRagType] = useState<RagType>("naive");
   const [result, setResult] = useState<RagResponse | null>(null);
   const [isRunning, setIsRunning] = useState(false);

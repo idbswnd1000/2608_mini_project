@@ -4,7 +4,7 @@ import { RagResponse, RagType, runRagDemo } from "../../services/api";
 const ragTypes: RagType[] = ["naive", "advanced", "agentic"];
 
 export function LiveDemo() {
-  const [question, setQuestion] = useState("How can I track my order?");
+  const [question, setQuestion] = useState("My order still has not arrived. Can I cancel it, and can I get a refund?");
   const [selectedRag, setSelectedRag] = useState<RagType>("naive");
   const [result, setResult] = useState<RagResponse | null>(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -27,6 +27,7 @@ export function LiveDemo() {
 
   return (
     <div className="live-demo">
+      <div className="panel-label">LIVE DEMO</div>
       <div className="live-form">
         <input value={question} onChange={(event) => setQuestion(event.target.value)} />
         <div className="segmented">
@@ -37,7 +38,7 @@ export function LiveDemo() {
           ))}
         </div>
         <button className="run-button" type="button" onClick={handleRunDemo} disabled={isRunning || !question.trim()}>
-          {isRunning ? "실행 중" : "RUN DEMO"}
+          {isRunning ? "실행 중" : "RUN"}
         </button>
       </div>
 

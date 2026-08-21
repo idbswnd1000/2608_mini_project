@@ -14,12 +14,14 @@ interface RagFlowProps {
 }
 
 export function RagFlow({ nodes, direction = "horizontal" }: RagFlowProps) {
+  const arrow = direction === "vertical" ? "\u2193" : "\u2192";
+
   return (
     <div className={`rag-flow ${direction}`}>
       {nodes.map((node, index) => (
         <div className="rag-flow-item" key={node.id}>
           <RagNode {...node} />
-          {index < nodes.length - 1 && <div className="flow-arrow">→</div>}
+          {index < nodes.length - 1 && <div className="flow-arrow">{arrow}</div>}
         </div>
       ))}
     </div>

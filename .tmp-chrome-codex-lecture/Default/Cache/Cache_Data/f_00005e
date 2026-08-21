@@ -1,0 +1,230 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/EvaluationPage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f1bae918"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=f1bae918"; const useEffect = __vite__cjsImport1_react["useEffect"]; const useMemo = __vite__cjsImport1_react["useMemo"]; const useState = __vite__cjsImport1_react["useState"];
+import { fetchEvaluationSummary } from "/src/services/api.ts";
+const difficulties = ["overall", "simple", "ambiguous", "complex"];
+const ragTypes = ["naive", "advanced", "agentic"];
+export function EvaluationPage() {
+  _s();
+  const [summary, setSummary] = useState(null);
+  const [difficulty, setDifficulty] = useState("overall");
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    fetchEvaluationSummary().then((data) => {
+      setSummary(data);
+      setError(null);
+    }).catch((reason) => setError(reason.message));
+  }, []);
+  const rows = useMemo(() => summary?.retrieval_summary[difficulty] ?? null, [difficulty, summary]);
+  return /* @__PURE__ */ jsxDEV("section", { className: "tool-page", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "page-heading", children: [
+      /* @__PURE__ */ jsxDEV("span", { children: "평가" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+        lineNumber: 26,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("h1", { children: "성능 비교" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+        lineNumber: 27,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { children: "저장된 evaluation 결과만 조회합니다. 새 평가 실행은 하지 않습니다." }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+        lineNumber: 28,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+      lineNumber: 25,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "segmented evaluation-tabs", children: difficulties.map(
+      (item) => /* @__PURE__ */ jsxDEV("button", { className: difficulty === item ? "active" : "", type: "button", onClick: () => setDifficulty(item), children: item }, item, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+        lineNumber: 33,
+        columnNumber: 9
+      }, this)
+    ) }, void 0, false, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+      lineNumber: 31,
+      columnNumber: 7
+    }, this),
+    error && /* @__PURE__ */ jsxDEV("p", { className: "status-line error", children: error }, void 0, false, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+      lineNumber: 39,
+      columnNumber: 17
+    }, this),
+    rows && /* @__PURE__ */ jsxDEV("div", { className: "detail-evaluation-grid", children: ragTypes.map((ragType) => {
+      const row = rows[ragType];
+      return /* @__PURE__ */ jsxDEV("article", { children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: ragType.toUpperCase() }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+          lineNumber: 46,
+          columnNumber: 17
+        }, this),
+        /* @__PURE__ */ jsxDEV("dl", { children: [
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "Questions" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 48,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: row.question_count }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 48,
+              columnNumber: 42
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 48,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "Hit@K" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 49,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: format(row.avg_hit_at_k) }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 49,
+              columnNumber: 38
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 49,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "Precision" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 50,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: format(row.avg_precision_at_k) }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 50,
+              columnNumber: 42
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 50,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "MRR" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 51,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: format(row.avg_mrr) }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 51,
+              columnNumber: 36
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 51,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "Coverage" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 52,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: format(row.avg_intent_coverage_at_k) }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 52,
+              columnNumber: 41
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 52,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "Time" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 53,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: row.avg_total_ms === null ? "-" : `${Math.round(row.avg_total_ms)}ms` }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 53,
+              columnNumber: 37
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 53,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("dt", { children: "Tokens" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 54,
+              columnNumber: 24
+            }, this),
+            /* @__PURE__ */ jsxDEV("dd", { children: row.avg_total_tokens === null ? "-" : Math.round(row.avg_total_tokens) }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+              lineNumber: 54,
+              columnNumber: 39
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+            lineNumber: 54,
+            columnNumber: 19
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+          lineNumber: 47,
+          columnNumber: 17
+        }, this)
+      ] }, ragType, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+        lineNumber: 45,
+        columnNumber: 13
+      }, this);
+    }) }, void 0, false, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+      lineNumber: 41,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx",
+    lineNumber: 24,
+    columnNumber: 5
+  }, this);
+}
+_s(EvaluationPage, "2clSBaM6P5VwWo1NmQ7ZOIbIuOo=");
+_c = EvaluationPage;
+function format(value) {
+  return value === null ? "-" : value.toFixed(2);
+}
+var _c;
+$RefreshReg$(_c, "EvaluationPage");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/bootcamp/mini_project/frontend/src/pages/EvaluationPage.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUE7QUFBQTtBQUFBLGFBV0E7QUFBQSxJQUVKLENBQUMsS0FqQkg7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQWtCQTtBQUFBLE9BbkNKO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FxQ0E7QUFFSjtBQUFDaEIsR0F4RGVELGdCQUFjO0FBQUEsS0FBZEE7QUEwRGhCLFNBQVNxQixPQUFPUyxPQUFzQjtBQUNwQyxTQUFPQSxVQUFVLE9BQU8sTUFBTUEsTUFBTUMsUUFBUSxDQUFDO0FBQy9DO0FBQUMsSUFBQUM7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlRWZmZWN0IiwidXNlTWVtbyIsInVzZVN0YXRlIiwiZmV0Y2hFdmFsdWF0aW9uU3VtbWFyeSIsImRpZmZpY3VsdGllcyIsInJhZ1R5cGVzIiwiRXZhbHVhdGlvblBhZ2UiLCJfcyIsInN1bW1hcnkiLCJzZXRTdW1tYXJ5IiwiZGlmZmljdWx0eSIsInNldERpZmZpY3VsdHkiLCJlcnJvciIsInNldEVycm9yIiwidGhlbiIsImRhdGEiLCJjYXRjaCIsInJlYXNvbiIsIm1lc3NhZ2UiLCJyb3dzIiwicmV0cmlldmFsX3N1bW1hcnkiLCJtYXAiLCJpdGVtIiwicmFnVHlwZSIsInJvdyIsInRvVXBwZXJDYXNlIiwicXVlc3Rpb25fY291bnQiLCJmb3JtYXQiLCJhdmdfaGl0X2F0X2siLCJhdmdfcHJlY2lzaW9uX2F0X2siLCJhdmdfbXJyIiwiYXZnX2ludGVudF9jb3ZlcmFnZV9hdF9rIiwiYXZnX3RvdGFsX21zIiwiTWF0aCIsInJvdW5kIiwiYXZnX3RvdGFsX3Rva2VucyIsInZhbHVlIiwidG9GaXhlZCIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIkV2YWx1YXRpb25QYWdlLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VFZmZlY3QsIHVzZU1lbW8sIHVzZVN0YXRlIH0gZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQgeyBEaWZmaWN1bHR5LCBFdmFsdWF0aW9uU3VtbWFyeSwgUmFnVHlwZSwgZmV0Y2hFdmFsdWF0aW9uU3VtbWFyeSB9IGZyb20gXCIuLi9zZXJ2aWNlcy9hcGlcIjtcblxuY29uc3QgZGlmZmljdWx0aWVzOiBEaWZmaWN1bHR5W10gPSBbXCJvdmVyYWxsXCIsIFwic2ltcGxlXCIsIFwiYW1iaWd1b3VzXCIsIFwiY29tcGxleFwiXTtcbmNvbnN0IHJhZ1R5cGVzOiBSYWdUeXBlW10gPSBbXCJuYWl2ZVwiLCBcImFkdmFuY2VkXCIsIFwiYWdlbnRpY1wiXTtcblxuZXhwb3J0IGZ1bmN0aW9uIEV2YWx1YXRpb25QYWdlKCkge1xuICBjb25zdCBbc3VtbWFyeSwgc2V0U3VtbWFyeV0gPSB1c2VTdGF0ZTxFdmFsdWF0aW9uU3VtbWFyeSB8IG51bGw+KG51bGwpO1xuICBjb25zdCBbZGlmZmljdWx0eSwgc2V0RGlmZmljdWx0eV0gPSB1c2VTdGF0ZTxEaWZmaWN1bHR5PihcIm92ZXJhbGxcIik7XG4gIGNvbnN0IFtlcnJvciwgc2V0RXJyb3JdID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7XG5cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBmZXRjaEV2YWx1YXRpb25TdW1tYXJ5KClcbiAgICAgIC50aGVuKChkYXRhKSA9PiB7XG4gICAgICAgIHNldFN1bW1hcnkoZGF0YSk7XG4gICAgICAgIHNldEVycm9yKG51bGwpO1xuICAgICAgfSlcbiAgICAgIC5jYXRjaCgocmVhc29uOiBFcnJvcikgPT4gc2V0RXJyb3IocmVhc29uLm1lc3NhZ2UpKTtcbiAgfSwgW10pO1xuXG4gIGNvbnN0IHJvd3MgPSB1c2VNZW1vKCgpID0+IHN1bW1hcnk/LnJldHJpZXZhbF9zdW1tYXJ5W2RpZmZpY3VsdHldID8/IG51bGwsIFtkaWZmaWN1bHR5LCBzdW1tYXJ5XSk7XG5cbiAgcmV0dXJuIChcbiAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJ0b29sLXBhZ2VcIj5cbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwicGFnZS1oZWFkaW5nXCI+XG4gICAgICAgIDxzcGFuPu2PieqwgDwvc3Bhbj5cbiAgICAgICAgPGgxPuyEseuKpSDruYTqtZA8L2gxPlxuICAgICAgICA8cD7soIDsnqXrkJwgZXZhbHVhdGlvbiDqsrDqs7zrp4wg7KGw7ZqM7ZWp64uI64ukLiDsg4gg7Y+J6rCAIOyLpO2WieydgCDtlZjsp4Ag7JWK7Iq164uI64ukLjwvcD5cbiAgICAgIDwvZGl2PlxuXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInNlZ21lbnRlZCBldmFsdWF0aW9uLXRhYnNcIj5cbiAgICAgICAge2RpZmZpY3VsdGllcy5tYXAoKGl0ZW0pID0+IChcbiAgICAgICAgICA8YnV0dG9uIGNsYXNzTmFtZT17ZGlmZmljdWx0eSA9PT0gaXRlbSA/IFwiYWN0aXZlXCIgOiBcIlwifSBrZXk9e2l0ZW19IHR5cGU9XCJidXR0b25cIiBvbkNsaWNrPXsoKSA9PiBzZXREaWZmaWN1bHR5KGl0ZW0pfT5cbiAgICAgICAgICAgIHtpdGVtfVxuICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICApKX1cbiAgICAgIDwvZGl2PlxuXG4gICAgICB7ZXJyb3IgJiYgPHAgY2xhc3NOYW1lPVwic3RhdHVzLWxpbmUgZXJyb3JcIj57ZXJyb3J9PC9wPn1cbiAgICAgIHtyb3dzICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJkZXRhaWwtZXZhbHVhdGlvbi1ncmlkXCI+XG4gICAgICAgICAge3JhZ1R5cGVzLm1hcCgocmFnVHlwZSkgPT4ge1xuICAgICAgICAgICAgY29uc3Qgcm93ID0gcm93c1tyYWdUeXBlXTtcbiAgICAgICAgICAgIHJldHVybiAoXG4gICAgICAgICAgICAgIDxhcnRpY2xlIGtleT17cmFnVHlwZX0+XG4gICAgICAgICAgICAgICAgPGgyPntyYWdUeXBlLnRvVXBwZXJDYXNlKCl9PC9oMj5cbiAgICAgICAgICAgICAgICA8ZGw+XG4gICAgICAgICAgICAgICAgICA8ZGl2PjxkdD5RdWVzdGlvbnM8L2R0PjxkZD57cm93LnF1ZXN0aW9uX2NvdW50fTwvZGQ+PC9kaXY+XG4gICAgICAgICAgICAgICAgICA8ZGl2PjxkdD5IaXRASzwvZHQ+PGRkPntmb3JtYXQocm93LmF2Z19oaXRfYXRfayl9PC9kZD48L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXY+PGR0PlByZWNpc2lvbjwvZHQ+PGRkPntmb3JtYXQocm93LmF2Z19wcmVjaXNpb25fYXRfayl9PC9kZD48L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXY+PGR0Pk1SUjwvZHQ+PGRkPntmb3JtYXQocm93LmF2Z19tcnIpfTwvZGQ+PC9kaXY+XG4gICAgICAgICAgICAgICAgICA8ZGl2PjxkdD5Db3ZlcmFnZTwvZHQ+PGRkPntmb3JtYXQocm93LmF2Z19pbnRlbnRfY292ZXJhZ2VfYXRfayl9PC9kZD48L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXY+PGR0PlRpbWU8L2R0PjxkZD57cm93LmF2Z190b3RhbF9tcyA9PT0gbnVsbCA/IFwiLVwiIDogYCR7TWF0aC5yb3VuZChyb3cuYXZnX3RvdGFsX21zKX1tc2B9PC9kZD48L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXY+PGR0PlRva2VuczwvZHQ+PGRkPntyb3cuYXZnX3RvdGFsX3Rva2VucyA9PT0gbnVsbCA/IFwiLVwiIDogTWF0aC5yb3VuZChyb3cuYXZnX3RvdGFsX3Rva2Vucyl9PC9kZD48L2Rpdj5cbiAgICAgICAgICAgICAgICA8L2RsPlxuICAgICAgICAgICAgICA8L2FydGljbGU+XG4gICAgICAgICAgICApO1xuICAgICAgICAgIH0pfVxuICAgICAgICA8L2Rpdj5cbiAgICAgICl9XG4gICAgPC9zZWN0aW9uPlxuICApO1xufVxuXG5mdW5jdGlvbiBmb3JtYXQodmFsdWU6IG51bWJlciB8IG51bGwpIHtcbiAgcmV0dXJuIHZhbHVlID09PSBudWxsID8gXCItXCIgOiB2YWx1ZS50b0ZpeGVkKDIpO1xufVxuIl0sImZpbGUiOiJDOi9ib290Y2FtcC9taW5pX3Byb2plY3QvZnJvbnRlbmQvc3JjL3BhZ2VzL0V2YWx1YXRpb25QYWdlLnRzeCJ9

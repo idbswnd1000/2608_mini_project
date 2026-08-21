@@ -23,7 +23,9 @@ from app.rag.agentic import (
     merge_candidates,
     query_refinement_step,
     rerank_round_step,
+    retry_limit_step,
     search_round_step,
+    select_accumulated_context,
 )
 from app.rag.naive import (
     Metrics,
@@ -266,6 +268,7 @@ async def run_agentic_retrieval_only(
     final_results = []
     evaluations = []
     merged_candidates = {}
+    round_contexts = []
 
     await emit_event(
         steps,
@@ -296,15 +299,17 @@ async def run_agentic_retrieval_only(
         retrieval_ms += round_retrieval_ms
         merge_candidates(merged_candidates, candidates)
 
-        final_results, round_rerank_ms = await rerank_round_step(
+        round_results, round_rerank_ms = await rerank_round_step(
             steps,
             None,
-            normalized_question,
-            list(merged_candidates.values()),
+            current_query,
+            candidates,
             top_k,
             search_round,
         )
         rerank_ms += round_rerank_ms
+        round_contexts.append(round_results)
+        final_results = select_accumulated_context(round_contexts, top_k)
 
         evaluation, round_evaluation_ms = await context_evaluation_step(
             steps,
@@ -312,6 +317,7 @@ async def run_agentic_retrieval_only(
             normalized_question,
             final_results,
             search_round,
+            current_query,
         )
         evaluations.append(evaluation)
         evaluation_ms += round_evaluation_ms
@@ -340,9 +346,13 @@ async def run_agentic_retrieval_only(
             None,
             evaluation.next_query,
             evaluation.reason,
+            evaluation.missing_requirements,
             search_round,
         )
         current_query = evaluation.next_query
+
+    if evaluations and not evaluations[-1].sufficient and completed_rounds == max_search_rounds:
+        await retry_limit_step(steps, None, completed_rounds, max_search_rounds)
 
     total_ms = int((time.perf_counter() - total_started_at) * 1000)
     metrics = AgenticMetrics(

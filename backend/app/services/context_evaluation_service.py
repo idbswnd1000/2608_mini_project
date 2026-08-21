@@ -14,19 +14,25 @@ You evaluate whether retrieved customer support context is sufficient.
 Return only valid JSON with these fields:
 {
   "sufficient": true,
+  "covered_requirements": ["requirement supported by context"],
+  "missing_requirements": [],
   "reason": "short reason",
   "next_query": null,
   "supporting_chunk_ids": [1, 2]
 }
-Set sufficient=true when the retrieved context gives enough grounded information to create a useful answer to the user's question.
-Do not require perfect or complete policy coverage.
-Set sufficient=false only when a core part of the question is missing and answering would require guessing facts not present in the context.
-For multi-part or conditional questions, every important part must be supported.
+First identify the user's main requirements. A requirement is a distinct question part, condition, eligibility, limitation, or requested procedure.
+Set sufficient=true only when the retrieved context gives explicit grounded support for all main requirements, or clearly states that a requested condition is irrelevant.
+Set sufficient=false when one or more main requirements lack substantive support and answering would require guessing facts not present in the context.
+For multi-part or conditional questions, each important part and condition must be supported.
 Do not mark context sufficient only because it is generally related.
 The context must support the condition or limitation in the user's question, not just the broad topic.
-Example: if the user asks whether they can cancel an order that has not arrived, general cancellation steps alone are not sufficient unless the context supports the late/not-arrived condition or clearly says the condition is irrelevant.
+Do not treat implied, adjacent, or likely policy details as covered. If cancellation, refund, delivery delay, tracking, payment, or modification conditions are asked separately, evaluate each separately.
+Example: if the user asks whether an undelivered order can be cancelled and refunded, context about late-delivery refund eligibility alone is insufficient unless it also explicitly supports cancellation eligibility or cancellation conditions.
+Example: general cancellation steps alone are insufficient for an undelivered-order question unless the context explicitly supports the late/not-arrived condition or clearly says the condition is irrelevant.
 When sufficient=true, supporting_chunk_ids must list the chunk numbers that support every important part.
-If insufficient, provide one concise next_query for another search.
+When sufficient=false, covered_requirements must list what is supported, missing_requirements must list what is not supported, and next_query must search specifically for the missing requirements.
+When sufficient=false, next_query must be different from the current search query and must target the missing requirements with more specific terms.
+If there is no useful different query to try, set next_query to null.
 Do not add facts.
 """.strip()
 
@@ -37,6 +43,8 @@ class ContextEvaluationResult:
     reason: str
     next_query: str | None
     supporting_chunk_ids: list[int]
+    covered_requirements: list[str]
+    missing_requirements: list[str]
     provider: str
     model: str
     configured: bool
@@ -49,12 +57,14 @@ class ContextEvaluationResult:
 def build_evaluation_input(
     question: str,
     chunks: list[RerankedResult],
+    search_query: str | None = None,
 ) -> str:
     context = "\n\n".join(
         f"[Chunk {index}]\n{chunk.content}"
         for index, chunk in enumerate(chunks, start=1)
     )
-    return f"Question:\n{question}\n\nRetrieved context:\n{context}"
+    query_section = f"\n\nCurrent search query:\n{search_query}" if search_query else ""
+    return f"Question:\n{question}{query_section}\n\nRetrieved context:\n{context}"
 
 
 def fallback_evaluation(
@@ -66,6 +76,8 @@ def fallback_evaluation(
         reason="Fallback evaluation: use currently retrieved context.",
         next_query=None,
         supporting_chunk_ids=[],
+        covered_requirements=[],
+        missing_requirements=[],
         provider="openai",
         model=settings.openai_model,
         configured=bool(settings.openai_api_key),
@@ -76,6 +88,7 @@ def fallback_evaluation(
 def _evaluate_context_sync(
     question: str,
     chunks: list[RerankedResult],
+    search_query: str | None = None,
 ) -> ContextEvaluationResult:
     if not settings.openai_api_key:
         return fallback_evaluation(question, "OPENAI_API_KEY is not set")
@@ -84,8 +97,8 @@ def _evaluate_context_sync(
     response = client.responses.create(
         model=settings.openai_model,
         instructions=CONTEXT_EVALUATION_PROMPT,
-        input=build_evaluation_input(question, chunks),
-        max_output_tokens=180,
+        input=build_evaluation_input(question, chunks, search_query),
+        max_output_tokens=360,
         temperature=0,
     )
     usage = response.usage
@@ -117,12 +130,16 @@ def _evaluate_context_sync(
         for chunk_id in supporting_chunk_ids
         if isinstance(chunk_id, int) or str(chunk_id).isdigit()
     ]
+    covered_requirements = normalize_string_list(payload.get("covered_requirements"))
+    missing_requirements = normalize_string_list(payload.get("missing_requirements"))
 
     return ContextEvaluationResult(
         sufficient=sufficient,
         reason=str(payload.get("reason") or "Context evaluation completed."),
         next_query=next_query,
         supporting_chunk_ids=supporting_chunk_ids,
+        covered_requirements=covered_requirements,
+        missing_requirements=missing_requirements,
         provider="openai",
         model=settings.openai_model,
         configured=True,
@@ -135,8 +152,15 @@ def _evaluate_context_sync(
 async def evaluate_context(
     question: str,
     chunks: list[RerankedResult],
+    search_query: str | None = None,
 ) -> ContextEvaluationResult:
     try:
-        return await asyncio.to_thread(_evaluate_context_sync, question, chunks)
+        return await asyncio.to_thread(_evaluate_context_sync, question, chunks, search_query)
     except OpenAIError as exc:
         return fallback_evaluation(question, str(exc))
+
+
+def normalize_string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]

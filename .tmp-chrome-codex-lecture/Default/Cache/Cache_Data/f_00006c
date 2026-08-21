@@ -1,0 +1,407 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/MicrophonePage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f1bae918"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=f1bae918"; const useEffect = __vite__cjsImport1_react["useEffect"]; const useRef = __vite__cjsImport1_react["useRef"]; const useState = __vite__cjsImport1_react["useState"];
+import { sendLectureAudio } from "/src/services/lectureControl.ts?t=1787204790574";
+const ACCEPTED_AUDIO_EXTENSIONS = [".mp3", ".m4a", ".wav", ".webm", ".ogg"];
+const ACCEPTED_AUDIO_INPUT = ACCEPTED_AUDIO_EXTENSIONS.join(",");
+const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
+export function MicrophonePage() {
+  _s();
+  const [connection, setConnection] = useState("unknown");
+  const [micStatus, setMicStatus] = useState("off");
+  const [fileStatus, setFileStatus] = useState("idle");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [lastTranscript, setLastTranscript] = useState("");
+  const [detectedCommand, setDetectedCommand] = useState(null);
+  const [error, setError] = useState(null);
+  const streamRef = useRef(null);
+  const recorderRef = useRef(null);
+  const processingRef = useRef(false);
+  useEffect(() => {
+    fetch("/health").then((response) => setConnection(response.ok ? "connected" : "disconnected")).catch(() => setConnection("disconnected"));
+    return () => {
+      stopMicrophone();
+    };
+  }, []);
+  async function processAudio(blob) {
+    if (processingRef.current || blob.size === 0) return;
+    processingRef.current = true;
+    setMicStatus("processing");
+    setError(null);
+    try {
+      const result = await sendLectureAudio(blob);
+      setLastTranscript(result.transcript || "");
+      setDetectedCommand(result.action);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Audio command failed");
+    } finally {
+      processingRef.current = false;
+      if (recorderRef.current?.state === "recording") {
+        setMicStatus("listening");
+      } else {
+        setMicStatus("off");
+      }
+    }
+  }
+  async function analyzeVoiceFile() {
+    if (!selectedFile) {
+      setError("Please select an audio file first.");
+      setFileStatus("error");
+      return;
+    }
+    const validationError = validateAudioFile(selectedFile);
+    if (validationError) {
+      setError(validationError);
+      setFileStatus("error");
+      return;
+    }
+    setFileStatus("uploading");
+    setError(null);
+    try {
+      const result = await sendLectureAudio(selectedFile, selectedFile.name);
+      setLastTranscript(result.transcript || "");
+      setDetectedCommand(result.action);
+      if (!result.transcript) {
+        setError("No transcript returned.");
+        setFileStatus("error");
+      } else {
+        setFileStatus(result.action ? "command" : "no-command");
+      }
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Voice file analysis failed");
+      setFileStatus("error");
+    }
+  }
+  function onFileChange(event) {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    setFileStatus("idle");
+    setError(null);
+  }
+  function validateAudioFile(file) {
+    const lowerName = file.name.toLowerCase();
+    const isSupported = ACCEPTED_AUDIO_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
+    if (!isSupported) {
+      return "Unsupported audio file. Use mp3, m4a, wav, webm, or ogg.";
+    }
+    if (file.size > MAX_AUDIO_FILE_BYTES) {
+      return "Audio file is too large. Use a file under 25 MB.";
+    }
+    if (file.size === 0) {
+      return "Audio file is empty.";
+    }
+    return null;
+  }
+  function fileStatusLabel() {
+    if (fileStatus === "uploading") return "Uploading / Transcribing";
+    if (fileStatus === "command") return "Command sent";
+    if (fileStatus === "no-command") return "No lecture command detected";
+    if (fileStatus === "error") return "Error";
+    return "Idle";
+  }
+  async function startMicrophone() {
+    if (recorderRef.current?.state === "recording") return;
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mimeType = preferredMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : void 0);
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          void processAudio(event.data);
+        }
+      };
+      recorder.onstop = () => {
+        if (!processingRef.current) {
+          setMicStatus("off");
+        }
+      };
+      recorder.start(4500);
+      setMicStatus("listening");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Microphone permission failed");
+      setMicStatus("off");
+    }
+  }
+  function stopMicrophone() {
+    const recorder = recorderRef.current;
+    if (recorder?.state === "recording") {
+      recorder.stop();
+    }
+    recorderRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (!processingRef.current) {
+      setMicStatus("off");
+    }
+  }
+  function preferredMimeType() {
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  }
+  return /* @__PURE__ */ jsxDEV("main", { className: "mic-page", children: /* @__PURE__ */ jsxDEV("section", { className: "mic-panel", children: [
+    /* @__PURE__ */ jsxDEV("header", { children: [
+      /* @__PURE__ */ jsxDEV("span", { children: "RAG CLASS" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 172,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("h1", { children: "RAG Lecture Microphone" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 173,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+      lineNumber: 171,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("dl", { className: "mic-status-grid", children: [
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("dt", { children: "Connection" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 178,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("dd", { children: connection === "connected" ? "Connected" : connection === "disconnected" ? "Disconnected" : "Checking" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 179,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 177,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("dt", { children: "Microphone" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 182,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("dd", { children: micStatus === "off" ? "OFF" : "ON" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 183,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 181,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("dt", { children: "Status" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 186,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("dd", { children: micStatus === "processing" ? "Processing" : micStatus === "listening" ? "Listening" : "Idle" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 187,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 185,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("dt", { children: "Detected Command" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 190,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("dd", { children: detectedCommand ?? "-" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 191,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 189,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: [
+        /* @__PURE__ */ jsxDEV("dt", { children: "File Status" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 194,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("dd", { children: fileStatusLabel() }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 195,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 193,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+      lineNumber: 176,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("section", { className: "mic-section", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "mic-section-heading", children: [
+        /* @__PURE__ */ jsxDEV("span", { children: "LIVE MICROPHONE" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 201,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { children: "Use after browser microphone permission is available." }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 202,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 200,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "mic-actions", children: [
+        /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: startMicrophone, disabled: micStatus !== "off", children: "Start Microphone" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 205,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: stopMicrophone, disabled: micStatus === "off", children: "Stop Microphone" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 208,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 204,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+      lineNumber: 199,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("section", { className: "mic-section", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "mic-section-heading", children: [
+        /* @__PURE__ */ jsxDEV("span", { children: "VOICE FILE" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 216,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { children: "Upload a short command recording." }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 217,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 215,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("label", { className: "mic-file-picker", children: [
+        /* @__PURE__ */ jsxDEV("span", { children: "Audio File" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 220,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("input", { type: "file", accept: ACCEPTED_AUDIO_INPUT, onChange: onFileChange }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 221,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 219,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "mic-file-meta", children: [
+        /* @__PURE__ */ jsxDEV("span", { children: "Selected" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 224,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("strong", { children: selectedFile ? selectedFile.name : "-" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+          lineNumber: 225,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 223,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "mic-actions mic-actions-single", children: /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: analyzeVoiceFile, disabled: fileStatus === "uploading", children: "Analyze Voice" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 228,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 227,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+      lineNumber: 214,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "mic-transcript", children: [
+      /* @__PURE__ */ jsxDEV("span", { children: "Last Transcript" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 235,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { children: lastTranscript ? `"${lastTranscript}"` : "-" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+        lineNumber: 236,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+      lineNumber: 234,
+      columnNumber: 9
+    }, this),
+    error && /* @__PURE__ */ jsxDEV("p", { className: "mic-error", children: error }, void 0, false, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+      lineNumber: 239,
+      columnNumber: 19
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+    lineNumber: 170,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx",
+    lineNumber: 169,
+    columnNumber: 5
+  }, this);
+}
+_s(MicrophonePage, "MGIJOCo4K70FAANeMd5pdzV66rU=");
+_c = MicrophonePage;
+var _c;
+$RefreshReg$(_c, "MicrophonePage");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/bootcamp/mini_project/frontend/src/pages/MicrophonePage.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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QSxJQUFBIiwibmFtZXMiOlsidXNlRWZmZWN0IiwidXNlUmVmIiwidXNlU3RhdGUiLCJzZW5kTGVjdHVyZUF1ZGlvIiwiQUNDRVBURURfQVVESU9fRVhURU5TSU9OUyIsIkFDQ0VQVEVEX0FVRElPX0lOUFVUIiwiam9pbiIsIk1BWF9BVURJT19GSUxFX0JZVEVTIiwiTWljcm9waG9uZVBhZ2UiLCJfcyIsImNvbm5lY3Rpb24iLCJzZXRDb25uZWN0aW9uIiwibWljU3RhdHVzIiwic2V0TWljU3RhdHVzIiwiZmlsZVN0YXR1cyIsInNldEZpbGVTdGF0dXMiLCJzZWxlY3RlZEZpbGUiLCJzZXRTZWxlY3RlZEZpbGUiLCJsYXN0VHJhbnNjcmlwdCIsInNldExhc3RUcmFuc2NyaXB0IiwiZGV0ZWN0ZWRDb21tYW5kIiwic2V0RGV0ZWN0ZWRDb21tYW5kIiwiZXJyb3IiLCJzZXRFcnJvciIsInN0cmVhbVJlZiIsInJlY29yZGVyUmVmIiwicHJvY2Vzc2luZ1JlZiIsImZldGNoIiwidGhlbiIsInJlc3BvbnNlIiwib2siLCJjYXRjaCIsInN0b3BNaWNyb3Bob25lIiwicHJvY2Vzc0F1ZGlvIiwiYmxvYiIsImN1cnJlbnQiLCJzaXplIiwicmVzdWx0IiwidHJhbnNjcmlwdCIsImFjdGlvbiIsInJlYXNvbiIsIkVycm9yIiwibWVzc2FnZSIsInN0YXRlIiwiYW5hbHl6ZVZvaWNlRmlsZSIsInZhbGlkYXRpb25FcnJvciIsInZhbGlkYXRlQXVkaW9GaWxlIiwibmFtZSIsIm9uRmlsZUNoYW5nZSIsImV2ZW50IiwiZmlsZSIsInRhcmdldCIsImZpbGVzIiwibG93ZXJOYW1lIiwidG9Mb3dlckNhc2UiLCJpc1N1cHBvcnRlZCIsInNvbWUiLCJleHRlbnNpb24iLCJlbmRzV2l0aCIsImZpbGVTdGF0dXNMYWJlbCIsInN0YXJ0TWljcm9waG9uZSIsInN0cmVhbSIsIm5hdmlnYXRvciIsIm1lZGlhRGV2aWNlcyIsImdldFVzZXJNZWRpYSIsImF1ZGlvIiwibWltZVR5cGUiLCJwcmVmZXJyZWRNaW1lVHlwZSIsInJlY29yZGVyIiwiTWVkaWFSZWNvcmRlciIsInVuZGVmaW5lZCIsIm9uZGF0YWF2YWlsYWJsZSIsImRhdGEiLCJvbnN0b3AiLCJzdGFydCIsInN0b3AiLCJnZXRUcmFja3MiLCJmb3JFYWNoIiwidHJhY2siLCJjYW5kaWRhdGVzIiwiZmluZCIsInR5cGUiLCJpc1R5cGVTdXBwb3J0ZWQiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJNaWNyb3Bob25lUGFnZS50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlRWZmZWN0LCB1c2VSZWYsIHVzZVN0YXRlIH0gZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQgdHlwZSB7IENoYW5nZUV2ZW50IH0gZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQgeyBMZWN0dXJlQWN0aW9uLCBMZWN0dXJlQ29tbWFuZFJlc3VsdCwgc2VuZExlY3R1cmVBdWRpbyB9IGZyb20gXCIuLi9zZXJ2aWNlcy9sZWN0dXJlQ29udHJvbFwiO1xuXG50eXBlIE1pY1N0YXR1cyA9IFwib2ZmXCIgfCBcImxpc3RlbmluZ1wiIHwgXCJwcm9jZXNzaW5nXCI7XG50eXBlIEZpbGVTdGF0dXMgPSBcImlkbGVcIiB8IFwidXBsb2FkaW5nXCIgfCBcImNvbW1hbmRcIiB8IFwibm8tY29tbWFuZFwiIHwgXCJlcnJvclwiO1xuXG5jb25zdCBBQ0NFUFRFRF9BVURJT19FWFRFTlNJT05TID0gW1wiLm1wM1wiLCBcIi5tNGFcIiwgXCIud2F2XCIsIFwiLndlYm1cIiwgXCIub2dnXCJdO1xuY29uc3QgQUNDRVBURURfQVVESU9fSU5QVVQgPSBBQ0NFUFRFRF9BVURJT19FWFRFTlNJT05TLmpvaW4oXCIsXCIpO1xuY29uc3QgTUFYX0FVRElPX0ZJTEVfQllURVMgPSAyNSAqIDEwMjQgKiAxMDI0O1xuXG5leHBvcnQgZnVuY3Rpb24gTWljcm9waG9uZVBhZ2UoKSB7XG4gIGNvbnN0IFtjb25uZWN0aW9uLCBzZXRDb25uZWN0aW9uXSA9IHVzZVN0YXRlPFwidW5rbm93blwiIHwgXCJjb25uZWN0ZWRcIiB8IFwiZGlzY29ubmVjdGVkXCI+KFwidW5rbm93blwiKTtcbiAgY29uc3QgW21pY1N0YXR1cywgc2V0TWljU3RhdHVzXSA9IHVzZVN0YXRlPE1pY1N0YXR1cz4oXCJvZmZcIik7XG4gIGNvbnN0IFtmaWxlU3RhdHVzLCBzZXRGaWxlU3RhdHVzXSA9IHVzZVN0YXRlPEZpbGVTdGF0dXM+KFwiaWRsZVwiKTtcbiAgY29uc3QgW3NlbGVjdGVkRmlsZSwgc2V0U2VsZWN0ZWRGaWxlXSA9IHVzZVN0YXRlPEZpbGUgfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2xhc3RUcmFuc2NyaXB0LCBzZXRMYXN0VHJhbnNjcmlwdF0gPSB1c2VTdGF0ZShcIlwiKTtcbiAgY29uc3QgW2RldGVjdGVkQ29tbWFuZCwgc2V0RGV0ZWN0ZWRDb21tYW5kXSA9IHVzZVN0YXRlPExlY3R1cmVBY3Rpb24gfCBudWxsPihudWxsKTtcbiAgY29uc3QgW2Vycm9yLCBzZXRFcnJvcl0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTtcbiAgY29uc3Qgc3RyZWFtUmVmID0gdXNlUmVmPE1lZGlhU3RyZWFtIHwgbnVsbD4obnVsbCk7XG4gIGNvbnN0IHJlY29yZGVyUmVmID0gdXNlUmVmPE1lZGlhUmVjb3JkZXIgfCBudWxsPihudWxsKTtcbiAgY29uc3QgcHJvY2Vzc2luZ1JlZiA9IHVzZVJlZihmYWxzZSk7XG5cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBmZXRjaChcIi9oZWFsdGhcIilcbiAgICAgIC50aGVuKChyZXNwb25zZSkgPT4gc2V0Q29ubmVjdGlvbihyZXNwb25zZS5vayA/IFwiY29ubmVjdGVkXCIgOiBcImRpc2Nvbm5lY3RlZFwiKSlcbiAgICAgIC5jYXRjaCgoKSA9PiBzZXRDb25uZWN0aW9uKFwiZGlzY29ubmVjdGVkXCIpKTtcblxuICAgIHJldHVybiAoKSA9PiB7XG4gICAgICBzdG9wTWljcm9waG9uZSgpO1xuICAgIH07XG4gIH0sIFtdKTtcblxuICBhc3luYyBmdW5jdGlvbiBwcm9jZXNzQXVkaW8oYmxvYjogQmxvYikge1xuICAgIGlmIChwcm9jZXNzaW5nUmVmLmN1cnJlbnQgfHwgYmxvYi5zaXplID09PSAwKSByZXR1cm47XG4gICAgcHJvY2Vzc2luZ1JlZi5jdXJyZW50ID0gdHJ1ZTtcbiAgICBzZXRNaWNTdGF0dXMoXCJwcm9jZXNzaW5nXCIpO1xuICAgIHNldEVycm9yKG51bGwpO1xuXG4gICAgdHJ5IHtcbiAgICAgIGNvbnN0IHJlc3VsdDogTGVjdHVyZUNvbW1hbmRSZXN1bHQgPSBhd2FpdCBzZW5kTGVjdHVyZUF1ZGlvKGJsb2IpO1xuICAgICAgc2V0TGFzdFRyYW5zY3JpcHQocmVzdWx0LnRyYW5zY3JpcHQgfHwgXCJcIik7XG4gICAgICBzZXREZXRlY3RlZENvbW1hbmQocmVzdWx0LmFjdGlvbik7XG4gICAgfSBjYXRjaCAocmVhc29uKSB7XG4gICAgICBzZXRFcnJvcihyZWFzb24gaW5zdGFuY2VvZiBFcnJvciA/IHJlYXNvbi5tZXNzYWdlIDogXCJBdWRpbyBjb21tYW5kIGZhaWxlZFwiKTtcbiAgICB9IGZpbmFsbHkge1xuICAgICAgcHJvY2Vzc2luZ1JlZi5jdXJyZW50ID0gZmFsc2U7XG4gICAgICBpZiAocmVjb3JkZXJSZWYuY3VycmVudD8uc3RhdGUgPT09IFwicmVjb3JkaW5nXCIpIHtcbiAgICAgICAgc2V0TWljU3RhdHVzKFwibGlzdGVuaW5nXCIpO1xuICAgICAgfSBlbHNlIHtcbiAgICAgICAgc2V0TWljU3RhdHVzKFwib2ZmXCIpO1xuICAgICAgfVxuICAgIH1cbiAgfVxuXG4gIGFzeW5jIGZ1bmN0aW9uIGFuYWx5emVWb2ljZUZpbGUoKSB7XG4gICAgaWYgKCFzZWxlY3RlZEZpbGUpIHtcbiAgICAgIHNldEVycm9yKFwiUGxlYXNlIHNlbGVjdCBhbiBhdWRpbyBmaWxlIGZpcnN0LlwiKTtcbiAgICAgIHNldEZpbGVTdGF0dXMoXCJlcnJvclwiKTtcbiAgICAgIHJldHVybjtcbiAgICB9XG5cbiAgICBjb25zdCB2YWxpZGF0aW9uRXJyb3IgPSB2YWxpZGF0ZUF1ZGlvRmlsZShzZWxlY3RlZEZpbGUpO1xuICAgIGlmICh2YWxpZGF0aW9uRXJyb3IpIHtcbiAgICAgIHNldEVycm9yKHZhbGlkYXRpb25FcnJvcik7XG4gICAgICBzZXRGaWxlU3RhdHVzKFwiZXJyb3JcIik7XG4gICAgICByZXR1cm47XG4gICAgfVxuXG4gICAgc2V0RmlsZVN0YXR1cyhcInVwbG9hZGluZ1wiKTtcbiAgICBzZXRFcnJvcihudWxsKTtcblxuICAgIHRyeSB7XG4gICAgICBjb25zdCByZXN1bHQgPSBhd2FpdCBzZW5kTGVjdHVyZUF1ZGlvKHNlbGVjdGVkRmlsZSwgc2VsZWN0ZWRGaWxlLm5hbWUpO1xuICAgICAgc2V0TGFzdFRyYW5zY3JpcHQocmVzdWx0LnRyYW5zY3JpcHQgfHwgXCJcIik7XG4gICAgICBzZXREZXRlY3RlZENvbW1hbmQocmVzdWx0LmFjdGlvbik7XG5cbiAgICAgIGlmICghcmVzdWx0LnRyYW5zY3JpcHQpIHtcbiAgICAgICAgc2V0RXJyb3IoXCJObyB0cmFuc2NyaXB0IHJldHVybmVkLlwiKTtcbiAgICAgICAgc2V0RmlsZVN0YXR1cyhcImVycm9yXCIpO1xuICAgICAgfSBlbHNlIHtcbiAgICAgICAgc2V0RmlsZVN0YXR1cyhyZXN1bHQuYWN0aW9uID8gXCJjb21tYW5kXCIgOiBcIm5vLWNvbW1hbmRcIik7XG4gICAgICB9XG4gICAgfSBjYXRjaCAocmVhc29uKSB7XG4gICAgICBzZXRFcnJvcihyZWFzb24gaW5zdGFuY2VvZiBFcnJvciA/IHJlYXNvbi5tZXNzYWdlIDogXCJWb2ljZSBmaWxlIGFuYWx5c2lzIGZhaWxlZFwiKTtcbiAgICAgIHNldEZpbGVTdGF0dXMoXCJlcnJvclwiKTtcbiAgICB9XG4gIH1cblxuICBmdW5jdGlvbiBvbkZpbGVDaGFuZ2UoZXZlbnQ6IENoYW5nZUV2ZW50PEhUTUxJbnB1dEVsZW1lbnQ+KSB7XG4gICAgY29uc3QgZmlsZSA9IGV2ZW50LnRhcmdldC5maWxlcz8uWzBdID8/IG51bGw7XG4gICAgc2V0U2VsZWN0ZWRGaWxlKGZpbGUpO1xuICAgIHNldEZpbGVTdGF0dXMoXCJpZGxlXCIpO1xuICAgIHNldEVycm9yKG51bGwpO1xuICB9XG5cbiAgZnVuY3Rpb24gdmFsaWRhdGVBdWRpb0ZpbGUoZmlsZTogRmlsZSkge1xuICAgIGNvbnN0IGxvd2VyTmFtZSA9IGZpbGUubmFtZS50b0xvd2VyQ2FzZSgpO1xuICAgIGNvbnN0IGlzU3VwcG9ydGVkID0gQUNDRVBURURfQVVESU9fRVhURU5TSU9OUy5zb21lKChleHRlbnNpb24pID0+IGxvd2VyTmFtZS5lbmRzV2l0aChleHRlbnNpb24pKTtcbiAgICBpZiAoIWlzU3VwcG9ydGVkKSB7XG4gICAgICByZXR1cm4gXCJVbnN1cHBvcnRlZCBhdWRpbyBmaWxlLiBVc2UgbXAzLCBtNGEsIHdhdiwgd2VibSwgb3Igb2dnLlwiO1xuICAgIH1cbiAgICBpZiAoZmlsZS5zaXplID4gTUFYX0FVRElPX0ZJTEVfQllURVMpIHtcbiAgICAgIHJldHVybiBcIkF1ZGlvIGZpbGUgaXMgdG9vIGxhcmdlLiBVc2UgYSBmaWxlIHVuZGVyIDI1IE1CLlwiO1xuICAgIH1cbiAgICBpZiAoZmlsZS5zaXplID09PSAwKSB7XG4gICAgICByZXR1cm4gXCJBdWRpbyBmaWxlIGlzIGVtcHR5LlwiO1xuICAgIH1cbiAgICByZXR1cm4gbnVsbDtcbiAgfVxuXG4gIGZ1bmN0aW9uIGZpbGVTdGF0dXNMYWJlbCgpIHtcbiAgICBpZiAoZmlsZVN0YXR1cyA9PT0gXCJ1cGxvYWRpbmdcIikgcmV0dXJuIFwiVXBsb2FkaW5nIC8gVHJhbnNjcmliaW5nXCI7XG4gICAgaWYgKGZpbGVTdGF0dXMgPT09IFwiY29tbWFuZFwiKSByZXR1cm4gXCJDb21tYW5kIHNlbnRcIjtcbiAgICBpZiAoZmlsZVN0YXR1cyA9PT0gXCJuby1jb21tYW5kXCIpIHJldHVybiBcIk5vIGxlY3R1cmUgY29tbWFuZCBkZXRlY3RlZFwiO1xuICAgIGlmIChmaWxlU3RhdHVzID09PSBcImVycm9yXCIpIHJldHVybiBcIkVycm9yXCI7XG4gICAgcmV0dXJuIFwiSWRsZVwiO1xuICB9XG5cbiAgYXN5bmMgZnVuY3Rpb24gc3RhcnRNaWNyb3Bob25lKCkge1xuICAgIGlmIChyZWNvcmRlclJlZi5jdXJyZW50Py5zdGF0ZSA9PT0gXCJyZWNvcmRpbmdcIikgcmV0dXJuO1xuICAgIHNldEVycm9yKG51bGwpO1xuXG4gICAgdHJ5IHtcbiAgICAgIGNvbnN0IHN0cmVhbSA9IGF3YWl0IG5hdmlnYXRvci5tZWRpYURldmljZXMuZ2V0VXNlck1lZGlhKHsgYXVkaW86IHRydWUgfSk7XG4gICAgICBzdHJlYW1SZWYuY3VycmVudCA9IHN0cmVhbTtcbiAgICAgIGNvbnN0IG1pbWVUeXBlID0gcHJlZmVycmVkTWltZVR5cGUoKTtcbiAgICAgIGNvbnN0IHJlY29yZGVyID0gbmV3IE1lZGlhUmVjb3JkZXIoc3RyZWFtLCBtaW1lVHlwZSA/IHsgbWltZVR5cGUgfSA6IHVuZGVmaW5lZCk7XG4gICAgICByZWNvcmRlclJlZi5jdXJyZW50ID0gcmVjb3JkZXI7XG4gICAgICByZWNvcmRlci5vbmRhdGFhdmFpbGFibGUgPSAoZXZlbnQpID0+IHtcbiAgICAgICAgaWYgKGV2ZW50LmRhdGEuc2l6ZSA+IDApIHtcbiAgICAgICAgICB2b2lkIHByb2Nlc3NBdWRpbyhldmVudC5kYXRhKTtcbiAgICAgICAgfVxuICAgICAgfTtcblxuICAgICAgcmVjb3JkZXIub25zdG9wID0gKCkgPT4ge1xuICAgICAgICBpZiAoIXByb2Nlc3NpbmdSZWYuY3VycmVudCkge1xuICAgICAgICAgIHNldE1pY1N0YXR1cyhcIm9mZlwiKTtcbiAgICAgICAgfVxuICAgICAgfTtcblxuICAgICAgcmVjb3JkZXIuc3RhcnQoNDUwMCk7XG4gICAgICBzZXRNaWNTdGF0dXMoXCJsaXN0ZW5pbmdcIik7XG4gICAgfSBjYXRjaCAocmVhc29uKSB7XG4gICAgICBzZXRFcnJvcihyZWFzb24gaW5zdGFuY2VvZiBFcnJvciA/IHJlYXNvbi5tZXNzYWdlIDogXCJNaWNyb3Bob25lIHBlcm1pc3Npb24gZmFpbGVkXCIpO1xuICAgICAgc2V0TWljU3RhdHVzKFwib2ZmXCIpO1xuICAgIH1cbiAgfVxuXG4gIGZ1bmN0aW9uIHN0b3BNaWNyb3Bob25lKCkge1xuICAgIGNvbnN0IHJlY29yZGVyID0gcmVjb3JkZXJSZWYuY3VycmVudDtcbiAgICBpZiAocmVjb3JkZXI/LnN0YXRlID09PSBcInJlY29yZGluZ1wiKSB7XG4gICAgICByZWNvcmRlci5zdG9wKCk7XG4gICAgfVxuICAgIHJlY29yZGVyUmVmLmN1cnJlbnQgPSBudWxsO1xuICAgIHN0cmVhbVJlZi5jdXJyZW50Py5nZXRUcmFja3MoKS5mb3JFYWNoKCh0cmFjaykgPT4gdHJhY2suc3RvcCgpKTtcbiAgICBzdHJlYW1SZWYuY3VycmVudCA9IG51bGw7XG4gICAgaWYgKCFwcm9jZXNzaW5nUmVmLmN1cnJlbnQpIHtcbiAgICAgIHNldE1pY1N0YXR1cyhcIm9mZlwiKTtcbiAgICB9XG4gIH1cblxuICBmdW5jdGlvbiBwcmVmZXJyZWRNaW1lVHlwZSgpIHtcbiAgICBjb25zdCBjYW5kaWRhdGVzID0gW1wiYXVkaW8vd2VibTtjb2RlY3M9b3B1c1wiLCBcImF1ZGlvL3dlYm1cIiwgXCJhdWRpby9tcDRcIl07XG4gICAgcmV0dXJuIGNhbmRpZGF0ZXMuZmluZCgodHlwZSkgPT4gTWVkaWFSZWNvcmRlci5pc1R5cGVTdXBwb3J0ZWQodHlwZSkpIHx8IFwiXCI7XG4gIH1cblxuICByZXR1cm4gKFxuICAgIDxtYWluIGNsYXNzTmFtZT1cIm1pYy1wYWdlXCI+XG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJtaWMtcGFuZWxcIj5cbiAgICAgICAgPGhlYWRlcj5cbiAgICAgICAgICA8c3Bhbj5SQUcgQ0xBU1M8L3NwYW4+XG4gICAgICAgICAgPGgxPlJBRyBMZWN0dXJlIE1pY3JvcGhvbmU8L2gxPlxuICAgICAgICA8L2hlYWRlcj5cblxuICAgICAgICA8ZGwgY2xhc3NOYW1lPVwibWljLXN0YXR1cy1ncmlkXCI+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIDxkdD5Db25uZWN0aW9uPC9kdD5cbiAgICAgICAgICAgIDxkZD57Y29ubmVjdGlvbiA9PT0gXCJjb25uZWN0ZWRcIiA/IFwiQ29ubmVjdGVkXCIgOiBjb25uZWN0aW9uID09PSBcImRpc2Nvbm5lY3RlZFwiID8gXCJEaXNjb25uZWN0ZWRcIiA6IFwiQ2hlY2tpbmdcIn08L2RkPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICA8ZHQ+TWljcm9waG9uZTwvZHQ+XG4gICAgICAgICAgICA8ZGQ+e21pY1N0YXR1cyA9PT0gXCJvZmZcIiA/IFwiT0ZGXCIgOiBcIk9OXCJ9PC9kZD5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgPGR0PlN0YXR1czwvZHQ+XG4gICAgICAgICAgICA8ZGQ+e21pY1N0YXR1cyA9PT0gXCJwcm9jZXNzaW5nXCIgPyBcIlByb2Nlc3NpbmdcIiA6IG1pY1N0YXR1cyA9PT0gXCJsaXN0ZW5pbmdcIiA/IFwiTGlzdGVuaW5nXCIgOiBcIklkbGVcIn08L2RkPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICA8ZHQ+RGV0ZWN0ZWQgQ29tbWFuZDwvZHQ+XG4gICAgICAgICAgICA8ZGQ+e2RldGVjdGVkQ29tbWFuZCA/PyBcIi1cIn08L2RkPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICA8ZHQ+RmlsZSBTdGF0dXM8L2R0PlxuICAgICAgICAgICAgPGRkPntmaWxlU3RhdHVzTGFiZWwoKX08L2RkPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICA8L2RsPlxuXG4gICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cIm1pYy1zZWN0aW9uXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaWMtc2VjdGlvbi1oZWFkaW5nXCI+XG4gICAgICAgICAgICA8c3Bhbj5MSVZFIE1JQ1JPUEhPTkU8L3NwYW4+XG4gICAgICAgICAgICA8cD5Vc2UgYWZ0ZXIgYnJvd3NlciBtaWNyb3Bob25lIHBlcm1pc3Npb24gaXMgYXZhaWxhYmxlLjwvcD5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1pYy1hY3Rpb25zXCI+XG4gICAgICAgICAgICA8YnV0dG9uIHR5cGU9XCJidXR0b25cIiBvbkNsaWNrPXtzdGFydE1pY3JvcGhvbmV9IGRpc2FibGVkPXttaWNTdGF0dXMgIT09IFwib2ZmXCJ9PlxuICAgICAgICAgICAgICBTdGFydCBNaWNyb3Bob25lXG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgIDxidXR0b24gdHlwZT1cImJ1dHRvblwiIG9uQ2xpY2s9e3N0b3BNaWNyb3Bob25lfSBkaXNhYmxlZD17bWljU3RhdHVzID09PSBcIm9mZlwifT5cbiAgICAgICAgICAgICAgU3RvcCBNaWNyb3Bob25lXG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9zZWN0aW9uPlxuXG4gICAgICAgIDxzZWN0aW9uIGNsYXNzTmFtZT1cIm1pYy1zZWN0aW9uXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaWMtc2VjdGlvbi1oZWFkaW5nXCI+XG4gICAgICAgICAgICA8c3Bhbj5WT0lDRSBGSUxFPC9zcGFuPlxuICAgICAgICAgICAgPHA+VXBsb2FkIGEgc2hvcnQgY29tbWFuZCByZWNvcmRpbmcuPC9wPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJtaWMtZmlsZS1waWNrZXJcIj5cbiAgICAgICAgICAgIDxzcGFuPkF1ZGlvIEZpbGU8L3NwYW4+XG4gICAgICAgICAgICA8aW5wdXQgdHlwZT1cImZpbGVcIiBhY2NlcHQ9e0FDQ0VQVEVEX0FVRElPX0lOUFVUfSBvbkNoYW5nZT17b25GaWxlQ2hhbmdlfSAvPlxuICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaWMtZmlsZS1tZXRhXCI+XG4gICAgICAgICAgICA8c3Bhbj5TZWxlY3RlZDwvc3Bhbj5cbiAgICAgICAgICAgIDxzdHJvbmc+e3NlbGVjdGVkRmlsZSA/IHNlbGVjdGVkRmlsZS5uYW1lIDogXCItXCJ9PC9zdHJvbmc+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaWMtYWN0aW9ucyBtaWMtYWN0aW9ucy1zaW5nbGVcIj5cbiAgICAgICAgICAgIDxidXR0b24gdHlwZT1cImJ1dHRvblwiIG9uQ2xpY2s9e2FuYWx5emVWb2ljZUZpbGV9IGRpc2FibGVkPXtmaWxlU3RhdHVzID09PSBcInVwbG9hZGluZ1wifT5cbiAgICAgICAgICAgICAgQW5hbHl6ZSBWb2ljZVxuICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvc2VjdGlvbj5cblxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1pYy10cmFuc2NyaXB0XCI+XG4gICAgICAgICAgPHNwYW4+TGFzdCBUcmFuc2NyaXB0PC9zcGFuPlxuICAgICAgICAgIDxwPntsYXN0VHJhbnNjcmlwdCA/IGBcIiR7bGFzdFRyYW5zY3JpcHR9XCJgIDogXCItXCJ9PC9wPlxuICAgICAgICA8L2Rpdj5cblxuICAgICAgICB7ZXJyb3IgJiYgPHAgY2xhc3NOYW1lPVwibWljLWVycm9yXCI+e2Vycm9yfTwvcD59XG4gICAgICA8L3NlY3Rpb24+XG4gICAgPC9tYWluPlxuICApO1xufVxuIl0sImZpbGUiOiJDOi9ib290Y2FtcC9taW5pX3Byb2plY3QvZnJvbnRlbmQvc3JjL3BhZ2VzL01pY3JvcGhvbmVQYWdlLnRzeCJ9

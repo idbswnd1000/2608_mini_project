@@ -13,6 +13,7 @@ Answer using only the provided Context.
 Do not present information outside the Context as fact.
 If the Context is insufficient, say that the available information is insufficient.
 Answer the user's question directly and concisely.
+Always answer in Korean, even when the Question or Context is written in another language.
 """.strip()
 
 
@@ -32,8 +33,8 @@ def _generate_answer_sync(question: str, context: str) -> LLMResult:
     if not settings.openai_api_key:
         return LLMResult(
             answer=(
-                "LLM is not configured. Set OPENAI_API_KEY and OPENAI_MODEL "
-                "to generate an answer from the retrieved context."
+                "LLM이 설정되어 있지 않습니다. 검색된 Context를 바탕으로 답변을 생성하려면 "
+                "OPENAI_API_KEY와 OPENAI_MODEL을 설정하세요."
             ),
             provider="openai",
             model=settings.openai_model,
@@ -70,7 +71,7 @@ async def generate_answer(question: str, context: str) -> LLMResult:
         return await asyncio.to_thread(_generate_answer_sync, question, context)
     except OpenAIError as exc:
         return LLMResult(
-            answer="LLM generation failed. Retrieved context is available.",
+            answer="LLM 답변 생성에 실패했습니다. 검색된 Context는 사용할 수 있습니다.",
             provider="openai",
             model=settings.openai_model,
             configured=True,

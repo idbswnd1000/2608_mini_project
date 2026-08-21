@@ -1,0 +1,190 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/lecture/NaiveLectureSection.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f1bae918"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import { usePresentationRun } from "/src/hooks/usePresentationRun.ts";
+import { ExecutablePipeline } from "/src/components/rag/ExecutablePipeline.tsx";
+import { ExecutionTrace } from "/src/components/rag/ExecutionTrace.tsx?t=1787193748040";
+const naiveGuide = {
+  why: "LLM이 답변하기 전에 질문과 관련된 외부 근거를 찾아야 합니다.",
+  principle: "질문과 문서를 같은 벡터 공간에 놓고, 의미적으로 가까운 문서를 검색합니다.",
+  keyPoint: "질문과 문서를 벡터 공간에서 비교해 관련 정보를 찾는다.",
+  concepts: [
+    {
+      label: "EMBEDDING",
+      title: "의미를 숫자 벡터로 표현",
+      description: "예: 배송 조회와 주문 위치 확인은 벡터 공간에서도 가깝게 표현됩니다."
+    },
+    {
+      label: "VECTOR SEARCH",
+      title: "질문 벡터와 문서 벡터 비교",
+      description: "키워드가 달라도 의미가 가까운 정보를 찾을 수 있습니다."
+    },
+    {
+      label: "TOP-K",
+      title: "상위 K개를 Context 후보로 선택",
+      description: "검색 결과 #1, #2, #3처럼 높은 순위의 근거를 LLM에 전달합니다."
+    }
+  ],
+  bridge: "LIMITATION · Poor Retrieval → Poor Context → Poor Answer. 그렇다면 검색 품질 자체를 개선할 수 없을까?"
+};
+function withAnswerStep(steps, status) {
+  const answerStep = { id: "answer", label: "Answer", detail: "최종 답변" };
+  const displaySteps = steps.some((step) => step.id === "answer") ? steps : [...steps, answerStep];
+  const answerState = { status: status === "complete" ? "completed" : "idle" };
+  return { displaySteps, answerState };
+}
+export function NaiveLectureSection() {
+  _s();
+  const run = usePresentationRun("naive", true);
+  const { displaySteps, answerState } = withAnswerStep(run.steps, run.status);
+  const displayStates = { ...run.stepStates, answer: answerState };
+  return /* @__PURE__ */ jsxDEV("section", { className: "lecture-section evolution-section naive-lecture", children: [
+    /* @__PURE__ */ jsxDEV("header", { className: "evolution-header lecture-page-header", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "section-kicker", children: "NAIVE RAG" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 44,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("h1", { children: "가장 기본적인 RAG는 어떻게 검색할까?" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 45,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { children: "검색한 결과를 바로 Context로 사용합니다." }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 46,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+      lineNumber: 43,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "evolution-layout", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "structure-panel", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "panel-label", children: "RAG STRUCTURE" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+          lineNumber: 51,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "principle-map naive-principle-map", "aria-label": "Naive RAG principle", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "principle-source", children: [
+            "INDEXED DOCUMENTS",
+            /* @__PURE__ */ jsxDEV("br", {}, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+              lineNumber: 53,
+              columnNumber: 64
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "미리 embedding된 문서" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+              lineNumber: 53,
+              columnNumber: 70
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+            lineNumber: 53,
+            columnNumber: 13
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "principle-relation", children: [
+            /* @__PURE__ */ jsxDEV("strong", { children: "Question → Embedding" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+              lineNumber: 55,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Question Vector ↔ Document Vectors" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+              lineNumber: 56,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("em", { children: "Similarity → Top-K Context" }, void 0, false, {
+              fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+              lineNumber: 57,
+              columnNumber: 15
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+            lineNumber: 54,
+            columnNumber: 13
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+          lineNumber: 52,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(ExecutablePipeline, { steps: displaySteps, stepStates: displayStates, density: "naive" }, void 0, false, {
+          fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+          lineNumber: 60,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 50,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(ExecutionTrace, { run, guide: naiveGuide }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 62,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+      lineNumber: 49,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "stage-tabs", "aria-label": "RAG stage indicator", children: [
+      /* @__PURE__ */ jsxDEV("span", { className: "active naive-accent", children: "Naive" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 66,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("span", { children: "Advanced" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 67,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("span", { children: "Agentic" }, void 0, false, {
+        fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+        lineNumber: 68,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+      lineNumber: 65,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx",
+    lineNumber: 42,
+    columnNumber: 5
+  }, this);
+}
+_s(NaiveLectureSection, "w6+1lBfsjoEuFalmwiegWkwNcqY=", false, function() {
+  return [usePresentationRun];
+});
+_c = NaiveLectureSection;
+var _c;
+$RefreshReg$(_c, "NaiveLectureSection");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/bootcamp/mini_project/frontend/src/components/lecture/NaiveLectureSection.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFBQSxXQVZyRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBV0E7QUFBQSxNQUNBLHVCQUFDLGtCQUFlLEtBQVUsT0FBT3RCLGNBQWpDO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBNEM7QUFBQSxTQWI5QztBQUFBO0FBQUE7QUFBQTtBQUFBLFdBY0E7QUFBQSxJQUVBLHVCQUFDLFNBQUksV0FBVSxjQUFhLGNBQVcsdUJBQ3JDO0FBQUEsNkJBQUMsVUFBSyxXQUFVLHVCQUFzQixxQkFBdEM7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUEyQztBQUFBLE1BQzNDLHVCQUFDLFVBQUssd0JBQU47QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUFjO0FBQUEsTUFDZCx1QkFBQyxVQUFLLHVCQUFOO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBYTtBQUFBLFNBSGY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUlBO0FBQUEsT0EzQkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQTRCQTtBQUVKO0FBQUNvQixHQXBDZUQscUJBQW1CO0FBQUEsVUFDckJ0QixrQkFBa0I7QUFBQTtBQUFBLEtBRGhCc0I7QUFBbUIsSUFBQU07QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlUHJlc2VudGF0aW9uUnVuIiwiRXhlY3V0YWJsZVBpcGVsaW5lIiwiRXhlY3V0aW9uVHJhY2UiLCJuYWl2ZUd1aWRlIiwid2h5IiwicHJpbmNpcGxlIiwia2V5UG9pbnQiLCJjb25jZXB0cyIsImxhYmVsIiwidGl0bGUiLCJkZXNjcmlwdGlvbiIsImJyaWRnZSIsIndpdGhBbnN3ZXJTdGVwIiwic3RlcHMiLCJzdGF0dXMiLCJhbnN3ZXJTdGVwIiwiaWQiLCJkZXRhaWwiLCJkaXNwbGF5U3RlcHMiLCJzb21lIiwic3RlcCIsImFuc3dlclN0YXRlIiwiTmFpdmVMZWN0dXJlU2VjdGlvbiIsIl9zIiwicnVuIiwiZGlzcGxheVN0YXRlcyIsInN0ZXBTdGF0ZXMiLCJhbnN3ZXIiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJOYWl2ZUxlY3R1cmVTZWN0aW9uLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBQaXBlbGluZVN0ZXAsIFN0ZXBTdGF0ZSwgdXNlUHJlc2VudGF0aW9uUnVuIH0gZnJvbSBcIi4uLy4uL2hvb2tzL3VzZVByZXNlbnRhdGlvblJ1blwiO1xuaW1wb3J0IHsgRXhlY3V0YWJsZVBpcGVsaW5lIH0gZnJvbSBcIi4uL3JhZy9FeGVjdXRhYmxlUGlwZWxpbmVcIjtcbmltcG9ydCB7IEV4ZWN1dGlvblRyYWNlLCBUZWFjaGluZ0d1aWRlIH0gZnJvbSBcIi4uL3JhZy9FeGVjdXRpb25UcmFjZVwiO1xuXG5jb25zdCBuYWl2ZUd1aWRlOiBUZWFjaGluZ0d1aWRlID0ge1xuICB3aHk6IFwiTExN7J20IOuLteuzgO2VmOq4sCDsoITsl5Ag7KeI66y46rO8IOq0gOugqOuQnCDsmbjrtoAg6re86rGw66W8IOywvuyVhOyVvCDtlanri4jri6QuXCIsXG4gIHByaW5jaXBsZTogXCLsp4jrrLjqs7wg66y47ISc66W8IOqwmeydgCDrsqHthLAg6rO16rCE7JeQIOuGk+qzoCwg7J2Y66+47KCB7Jy866GcIOqwgOq5jOyatCDrrLjshJzrpbwg6rKA7IOJ7ZWp64uI64ukLlwiLFxuICBrZXlQb2ludDogXCLsp4jrrLjqs7wg66y47ISc66W8IOuyoe2EsCDqs7XqsITsl5DshJwg67mE6rWQ7ZW0IOq0gOugqCDsoJXrs7Trpbwg7LC+64qU64ukLlwiLFxuICBjb25jZXB0czogW1xuICAgIHtcbiAgICAgIGxhYmVsOiBcIkVNQkVERElOR1wiLFxuICAgICAgdGl0bGU6IFwi7J2Y66+466W8IOyIq+yekCDrsqHthLDroZwg7ZGc7ZiEXCIsXG4gICAgICBkZXNjcmlwdGlvbjogXCLsmIg6IOuwsOyGoSDsobDtmozsmYAg7KO866y4IOychOy5mCDtmZXsnbjsnYAg67Kh7YSwIOqzteqwhOyXkOyEnOuPhCDqsIDquZ3qsowg7ZGc7ZiE65Cp64uI64ukLlwiXG4gICAgfSxcbiAgICB7XG4gICAgICBsYWJlbDogXCJWRUNUT1IgU0VBUkNIXCIsXG4gICAgICB0aXRsZTogXCLsp4jrrLgg67Kh7YSw7JmAIOusuOyEnCDrsqHthLAg67mE6rWQXCIsXG4gICAgICBkZXNjcmlwdGlvbjogXCLtgqTsm4zrk5zqsIAg64us652864+EIOydmOuvuOqwgCDqsIDquYzsmrQg7KCV67O066W8IOywvuydhCDsiJgg7J6I7Iq164uI64ukLlwiXG4gICAgfSxcbiAgICB7XG4gICAgICBsYWJlbDogXCJUT1AtS1wiLFxuICAgICAgdGl0bGU6IFwi7IOB7JyEIEvqsJzrpbwgQ29udGV4dCDtm4Trs7TroZwg7ISg7YOdXCIsXG4gICAgICBkZXNjcmlwdGlvbjogXCLqsoDsg4kg6rKw6rO8ICMxLCAjMiwgIzPsspjrn7wg64aS7J2AIOyInOychOydmCDqt7zqsbDrpbwgTExN7JeQIOyghOuLrO2VqeuLiOuLpC5cIlxuICAgIH1cbiAgXSxcbiAgYnJpZGdlOiBcIkxJTUlUQVRJT04gwrcgUG9vciBSZXRyaWV2YWwg4oaSIFBvb3IgQ29udGV4dCDihpIgUG9vciBBbnN3ZXIuIOq3uOugh+uLpOuptCDqsoDsg4kg7ZKI7KeIIOyekOyytOulvCDqsJzshKDtlaAg7IiYIOyXhuydhOq5jD9cIlxufTtcblxuZnVuY3Rpb24gd2l0aEFuc3dlclN0ZXAoc3RlcHM6IFBpcGVsaW5lU3RlcFtdLCBzdGF0dXM6IFJldHVyblR5cGU8dHlwZW9mIHVzZVByZXNlbnRhdGlvblJ1bj5bXCJzdGF0dXNcIl0pIHtcbiAgY29uc3QgYW5zd2VyU3RlcCA9IHsgaWQ6IFwiYW5zd2VyXCIsIGxhYmVsOiBcIkFuc3dlclwiLCBkZXRhaWw6IFwi7LWc7KKFIOuLteuzgFwiIH07XG4gIGNvbnN0IGRpc3BsYXlTdGVwcyA9IHN0ZXBzLnNvbWUoKHN0ZXApID0+IHN0ZXAuaWQgPT09IFwiYW5zd2VyXCIpID8gc3RlcHMgOiBbLi4uc3RlcHMsIGFuc3dlclN0ZXBdO1xuICBjb25zdCBhbnN3ZXJTdGF0ZTogU3RlcFN0YXRlID0geyBzdGF0dXM6IHN0YXR1cyA9PT0gXCJjb21wbGV0ZVwiID8gXCJjb21wbGV0ZWRcIiA6IFwiaWRsZVwiIH07XG4gIHJldHVybiB7IGRpc3BsYXlTdGVwcywgYW5zd2VyU3RhdGUgfTtcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIE5haXZlTGVjdHVyZVNlY3Rpb24oKSB7XG4gIGNvbnN0IHJ1biA9IHVzZVByZXNlbnRhdGlvblJ1bihcIm5haXZlXCIsIHRydWUpO1xuICBjb25zdCB7IGRpc3BsYXlTdGVwcywgYW5zd2VyU3RhdGUgfSA9IHdpdGhBbnN3ZXJTdGVwKHJ1bi5zdGVwcywgcnVuLnN0YXR1cyk7XG4gIGNvbnN0IGRpc3BsYXlTdGF0ZXMgPSB7IC4uLnJ1bi5zdGVwU3RhdGVzLCBhbnN3ZXI6IGFuc3dlclN0YXRlIH07XG5cbiAgcmV0dXJuIChcbiAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJsZWN0dXJlLXNlY3Rpb24gZXZvbHV0aW9uLXNlY3Rpb24gbmFpdmUtbGVjdHVyZVwiPlxuICAgICAgPGhlYWRlciBjbGFzc05hbWU9XCJldm9sdXRpb24taGVhZGVyIGxlY3R1cmUtcGFnZS1oZWFkZXJcIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzZWN0aW9uLWtpY2tlclwiPk5BSVZFIFJBRzwvZGl2PlxuICAgICAgICA8aDE+6rCA7J6lIOq4sOuzuOyggeyduCBSQUfripQg7Ja065a76rKMIOqygOyDie2VoOq5jD88L2gxPlxuICAgICAgICA8cD7qsoDsg4ntlZwg6rKw6rO866W8IOuwlOuhnCBDb250ZXh066GcIOyCrOyaqe2VqeuLiOuLpC48L3A+XG4gICAgICA8L2hlYWRlcj5cblxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJldm9sdXRpb24tbGF5b3V0XCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3RydWN0dXJlLXBhbmVsXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwYW5lbC1sYWJlbFwiPlJBRyBTVFJVQ1RVUkU8L2Rpdj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInByaW5jaXBsZS1tYXAgbmFpdmUtcHJpbmNpcGxlLW1hcFwiIGFyaWEtbGFiZWw9XCJOYWl2ZSBSQUcgcHJpbmNpcGxlXCI+XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInByaW5jaXBsZS1zb3VyY2VcIj5JTkRFWEVEIERPQ1VNRU5UUzxiciAvPjxzcGFuPuuvuOumrCBlbWJlZGRpbmfrkJwg66y47IScPC9zcGFuPjwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwcmluY2lwbGUtcmVsYXRpb25cIj5cbiAgICAgICAgICAgICAgPHN0cm9uZz5RdWVzdGlvbiDihpIgRW1iZWRkaW5nPC9zdHJvbmc+XG4gICAgICAgICAgICAgIDxzcGFuPlF1ZXN0aW9uIFZlY3RvciDihpQgRG9jdW1lbnQgVmVjdG9yczwvc3Bhbj5cbiAgICAgICAgICAgICAgPGVtPlNpbWlsYXJpdHkg4oaSIFRvcC1LIENvbnRleHQ8L2VtPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPEV4ZWN1dGFibGVQaXBlbGluZSBzdGVwcz17ZGlzcGxheVN0ZXBzfSBzdGVwU3RhdGVzPXtkaXNwbGF5U3RhdGVzfSBkZW5zaXR5PVwibmFpdmVcIiAvPlxuICAgICAgICA8L2Rpdj5cbiAgICAgICAgPEV4ZWN1dGlvblRyYWNlIHJ1bj17cnVufSBndWlkZT17bmFpdmVHdWlkZX0gLz5cbiAgICAgIDwvZGl2PlxuXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInN0YWdlLXRhYnNcIiBhcmlhLWxhYmVsPVwiUkFHIHN0YWdlIGluZGljYXRvclwiPlxuICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJhY3RpdmUgbmFpdmUtYWNjZW50XCI+TmFpdmU8L3NwYW4+XG4gICAgICAgIDxzcGFuPkFkdmFuY2VkPC9zcGFuPlxuICAgICAgICA8c3Bhbj5BZ2VudGljPC9zcGFuPlxuICAgICAgPC9kaXY+XG4gICAgPC9zZWN0aW9uPlxuICApO1xufVxuIl0sImZpbGUiOiJDOi9ib290Y2FtcC9taW5pX3Byb2plY3QvZnJvbnRlbmQvc3JjL2NvbXBvbmVudHMvbGVjdHVyZS9OYWl2ZUxlY3R1cmVTZWN0aW9uLnRzeCJ9

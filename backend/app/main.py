@@ -13,6 +13,8 @@ from app.models import (
 )
 from app.routers.documents_router import router as document_router
 from app.routers.evaluation_router import router as evaluation_router
+from app.routers.lecture_control_router import router as lecture_control_router
+from app.routers.presentation_router import router as presentation_router
 from app.routers.rag_router import router as rag_router
 
 
@@ -32,6 +34,8 @@ app = FastAPI(
 app.include_router(document_router)
 app.include_router(rag_router)
 app.include_router(evaluation_router)
+app.include_router(presentation_router)
+app.include_router(lecture_control_router)
 
 
 @app.get("/")

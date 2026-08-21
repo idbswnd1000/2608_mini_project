@@ -2,11 +2,10 @@ import asyncio
 import time
 from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
 from app.services.lecture_command_matcher import LectureAction, match_lecture_command
-from app.services.stt_service import transcribe_audio_upload
 
 
 router = APIRouter(prefix="/lecture-control", tags=["lecture-control"])
@@ -131,15 +130,3 @@ async def command_from_transcript(payload: CommandRequest):
     if not payload.transcript:
         raise HTTPException(status_code=400, detail="transcript or action is required")
     return await process_transcript(payload.transcript)
-
-
-@router.post("/audio")
-async def command_from_audio(audio: UploadFile = File(...)):
-    try:
-        transcript = await transcribe_audio_upload(audio)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"STT failed: {exc}") from exc
-
-    return await process_transcript(transcript)
