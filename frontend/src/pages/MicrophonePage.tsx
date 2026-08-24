@@ -61,9 +61,11 @@ export function MicrophonePage() {
   const [fileStatus, setFileStatus] = useState<FileStatus>("idle");
   const [speechSupported, setSpeechSupported] = useState<"unknown" | "supported" | "unsupported">("unknown");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [liveTranscript, setLiveTranscript] = useState("");
+  const [liveFinalTranscript, setLiveFinalTranscript] = useState("");
+  const [liveInterimTranscript, setLiveInterimTranscript] = useState("");
   const [liveDetectedCommand, setLiveDetectedCommand] = useState<LectureAction | null>(null);
-  const [fileTranscript, setFileTranscript] = useState("");
+  const [fileFinalTranscript, setFileFinalTranscript] = useState("");
+  const [fileInterimTranscript, setFileInterimTranscript] = useState("");
   const [fileDetectedCommand, setFileDetectedCommand] = useState<LectureAction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
@@ -72,8 +74,14 @@ export function MicrophonePage() {
   const shouldListenRef = useRef(false);
   const recognitionRunningRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
-  const recentTranscriptRef = useRef("");
-  const fileTranscriptRef = useRef("");
+  const liveFinalTranscriptRef = useRef("");
+  const fileFinalTranscriptRef = useRef("");
+  const liveCommandFinalBufferRef = useRef("");
+  const liveCommandInterimRef = useRef("");
+  const fileCommandFinalBufferRef = useRef("");
+  const fileCommandInterimRef = useRef("");
+  const liveLastFinalResultIndexRef = useRef(-1);
+  const fileLastFinalResultIndexRef = useRef(-1);
   const fileDetectedCommandRef = useRef<LectureAction | null>(null);
   const commandLockedUntilRef = useRef(0);
 
@@ -104,9 +112,13 @@ export function MicrophonePage() {
     }
 
     cleanupFileRecognition();
-    fileTranscriptRef.current = "";
+    fileFinalTranscriptRef.current = "";
+    fileCommandFinalBufferRef.current = "";
+    fileCommandInterimRef.current = "";
+    fileLastFinalResultIndexRef.current = -1;
     fileDetectedCommandRef.current = null;
-    setFileTranscript("");
+    setFileFinalTranscript("");
+    setFileInterimTranscript("");
     setFileDetectedCommand(null);
     setFileStatus("loading");
     setError(null);
@@ -155,9 +167,13 @@ export function MicrophonePage() {
   function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
-    fileTranscriptRef.current = "";
+    fileFinalTranscriptRef.current = "";
+    fileCommandFinalBufferRef.current = "";
+    fileCommandInterimRef.current = "";
+    fileLastFinalResultIndexRef.current = -1;
     fileDetectedCommandRef.current = null;
-    setFileTranscript("");
+    setFileFinalTranscript("");
+    setFileInterimTranscript("");
     setFileDetectedCommand(null);
     setFileStatus("idle");
     setError(null);
@@ -308,6 +324,7 @@ export function MicrophonePage() {
     }
     recognitionRunningRef.current = false;
     recognitionRef.current = null;
+    setLiveInterimTranscript("");
     setMicStatus("off");
   }
 
@@ -330,25 +347,58 @@ export function MicrophonePage() {
   }
 
   function handleSpeechResult(event: BrowserSpeechRecognitionEvent) {
-    const pieces: string[] = [];
+    const finalPieces: string[] = [];
+    const interimPieces: string[] = [];
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const result = event.results[index];
-      if (result?.[0]?.transcript) {
-        pieces.push(result[0].transcript);
+      const transcript = result?.[0]?.transcript?.trim();
+      if (!transcript) {
+        continue;
+      }
+      if (result.isFinal) {
+        if (index <= liveLastFinalResultIndexRef.current) {
+          continue;
+        }
+        liveLastFinalResultIndexRef.current = index;
+        finalPieces.push(transcript);
+      } else {
+        interimPieces.push(transcript);
       }
     }
 
-    const latestText = pieces.join(" ").trim();
-    if (!latestText) return;
+    const finalText = finalPieces.join(" ").trim();
+    const interimText = interimPieces.join(" ").trim();
 
-    const recentTranscript = `${recentTranscriptRef.current} ${latestText}`.trim().slice(-RECENT_TRANSCRIPT_MAX_CHARS);
-    recentTranscriptRef.current = recentTranscript;
-    setLiveTranscript(latestText);
+    if (interimText) {
+      setLiveInterimTranscript(interimText);
+      liveCommandInterimRef.current = interimText;
+    } else if (finalText) {
+      setLiveInterimTranscript("");
+      liveCommandInterimRef.current = "";
+    }
+
+    if (!finalText && !interimText) return;
+
+    if (finalText) {
+      liveFinalTranscriptRef.current = appendTranscript(liveFinalTranscriptRef.current, finalText);
+      liveCommandFinalBufferRef.current = appendTranscript(
+        liveCommandFinalBufferRef.current,
+        finalText,
+        RECENT_TRANSCRIPT_MAX_CHARS
+      );
+      setLiveFinalTranscript(liveFinalTranscriptRef.current);
+    }
+
+    const recentTranscript = displayTranscript(liveCommandFinalBufferRef.current, liveCommandInterimRef.current).slice(
+      -RECENT_TRANSCRIPT_MAX_CHARS
+    );
 
     const action = matchBrowserLectureCommand(recentTranscript);
     if (!action || shouldSuppressCommand(action, recentTranscript)) return;
 
-    recentTranscriptRef.current = "";
+    liveCommandFinalBufferRef.current = "";
+    liveCommandInterimRef.current = "";
+    setLiveInterimTranscript("");
     setLiveDetectedCommand(action);
     setMicStatus("command");
     void sendLectureCommand(action, recentTranscript)
@@ -364,25 +414,58 @@ export function MicrophonePage() {
   }
 
   function handleFileSpeechResult(event: BrowserSpeechRecognitionEvent) {
-    const pieces: string[] = [];
+    const finalPieces: string[] = [];
+    const interimPieces: string[] = [];
     for (let index = event.resultIndex; index < event.results.length; index += 1) {
       const result = event.results[index];
-      if (result?.[0]?.transcript) {
-        pieces.push(result[0].transcript);
+      const transcript = result?.[0]?.transcript?.trim();
+      if (!transcript) {
+        continue;
+      }
+      if (result.isFinal) {
+        if (index <= fileLastFinalResultIndexRef.current) {
+          continue;
+        }
+        fileLastFinalResultIndexRef.current = index;
+        finalPieces.push(transcript);
+      } else {
+        interimPieces.push(transcript);
       }
     }
 
-    const latestText = pieces.join(" ").trim();
-    if (!latestText) return;
+    const finalText = finalPieces.join(" ").trim();
+    const interimText = interimPieces.join(" ").trim();
 
-    const transcript = `${fileTranscriptRef.current} ${latestText}`.trim().slice(-RECENT_TRANSCRIPT_MAX_CHARS);
-    fileTranscriptRef.current = transcript;
-    setFileTranscript(transcript);
+    if (interimText) {
+      setFileInterimTranscript(interimText);
+      fileCommandInterimRef.current = interimText;
+    } else if (finalText) {
+      setFileInterimTranscript("");
+      fileCommandInterimRef.current = "";
+    }
+
+    if (!finalText && !interimText) return;
+
+    if (finalText) {
+      fileFinalTranscriptRef.current = appendTranscript(fileFinalTranscriptRef.current, finalText);
+      fileCommandFinalBufferRef.current = appendTranscript(
+        fileCommandFinalBufferRef.current,
+        finalText,
+        RECENT_TRANSCRIPT_MAX_CHARS
+      );
+      setFileFinalTranscript(fileFinalTranscriptRef.current);
+    }
+
+    const transcript = displayTranscript(fileCommandFinalBufferRef.current, fileCommandInterimRef.current).slice(
+      -RECENT_TRANSCRIPT_MAX_CHARS
+    );
 
     const action = matchBrowserLectureCommand(transcript);
     if (!action || shouldSuppressCommand(action, transcript)) return;
 
-    fileTranscriptRef.current = "";
+    fileCommandFinalBufferRef.current = "";
+    fileCommandInterimRef.current = "";
+    setFileInterimTranscript("");
     fileDetectedCommandRef.current = action;
     setFileDetectedCommand(action);
     setFileStatus("command");
@@ -403,6 +486,18 @@ export function MicrophonePage() {
     commandLockedUntilRef.current = now + COMMAND_LOCK_MS;
     return false;
   }
+
+  function appendTranscript(base: string, next: string, maxChars?: number) {
+    const combined = `${base} ${next}`.replace(/\s+/g, " ").trim();
+    return typeof maxChars === "number" ? combined.slice(-maxChars) : combined;
+  }
+
+  function displayTranscript(finalTranscript: string, interimTranscript: string) {
+    return `${finalTranscript} ${interimTranscript}`.replace(/\s+/g, " ").trim();
+  }
+
+  const liveDisplayTranscript = displayTranscript(liveFinalTranscript, liveInterimTranscript);
+  const fileDisplayTranscript = displayTranscript(fileFinalTranscript, fileInterimTranscript);
 
   return (
     <main className="mic-page">
@@ -454,7 +549,7 @@ export function MicrophonePage() {
           </div>
           <div className="mic-transcript">
             <span>Live Transcript</span>
-            <p>{liveTranscript ? `"${liveTranscript}"` : "-"}</p>
+            <p>{liveDisplayTranscript ? `"${liveDisplayTranscript}"` : "-"}</p>
           </div>
           <div className="mic-transcript">
             <span>Detected Command</span>
@@ -482,7 +577,7 @@ export function MicrophonePage() {
           </div>
           <div className="mic-transcript">
             <span>Transcript</span>
-            <p>{fileTranscript ? `"${fileTranscript}"` : "-"}</p>
+            <p>{fileDisplayTranscript ? `"${fileDisplayTranscript}"` : "-"}</p>
           </div>
           <div className="mic-transcript">
             <span>Detected Command</span>

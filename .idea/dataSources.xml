@@ -8,5 +8,12 @@
       <jdbc-url>jdbc:postgresql://localhost:5432/rag_db</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="rag_db@13.125.210.224" uuid="80858b67-9606-44bc-ac11-032f1df7e4c7">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://13.125.210.224:5432/rag_db</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

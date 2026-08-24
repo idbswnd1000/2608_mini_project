@@ -15,5 +15,45 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d rag_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: rag_backend
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rag_user:12345678@postgres:5432/rag_db
+
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: rag_frontend
+    restart: unless-stopped
+
+    depends_on:
+      - backend
+
+    environment:
+      VITE_BACKEND_TARGET: http://backend:8000
+
+    ports:
+      - "5173:5173"
+
 volumes:
   postgres_data:
