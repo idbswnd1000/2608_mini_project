@@ -39,9 +39,16 @@ export interface RagResponse {
     model: string;
     configured: boolean;
     error?: string | null;
+    input_tokens?: number | null;
+    output_tokens?: number | null;
+    total_tokens?: number | null;
   };
+  candidate_count?: number;
+  vector_candidates?: RetrievedChunk[];
+  query_rewrite?: Record<string, unknown>;
   search_rounds?: number;
   search_history?: Array<Record<string, unknown>>;
+  search_round_details?: Array<Record<string, unknown>>;
   context_evaluations?: Array<Record<string, unknown>>;
   agent_decision?: Record<string, unknown>;
 }
@@ -76,7 +83,16 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || `Request failed: ${response.status}`);
+    let detail = message;
+    try {
+      const parsed = JSON.parse(message) as { detail?: unknown };
+      if (typeof parsed.detail === "string") {
+        detail = parsed.detail;
+      }
+    } catch {
+      detail = message;
+    }
+    throw new Error(detail || `Request failed: ${response.status}`);
   }
 
   return response.json() as Promise<T>;

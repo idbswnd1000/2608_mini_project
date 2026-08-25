@@ -12,6 +12,7 @@ Keep the original meaning.
 Do not add new facts.
 Return only one search query.
 Make it useful for searching customer support documents.
+If the user question is in Korean, return the rewritten query in natural Korean.
 """.strip()
 
 

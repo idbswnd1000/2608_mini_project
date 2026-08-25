@@ -4,8 +4,7 @@ export type PageId =
   | "advanced"
   | "agentic"
   | "comparison"
-  | "playground"
-  | "evaluation"
+  | "ragComparison"
   | "graphrag"
   | "multimodal";
 
@@ -36,16 +35,9 @@ export const navigationGroups: NavigationGroup[] = [
       { id: "naive", label: "Naive RAG" },
       { id: "advanced", label: "Advanced RAG" },
       { id: "agentic", label: "Agentic RAG" },
+      { id: "ragComparison", label: "RAG 비교" },
       { id: "comparison", label: "구조 비교" }
     ]
-  },
-  {
-    title: "실습",
-    items: [{ id: "playground", label: "RAG Playground" }]
-  },
-  {
-    title: "평가",
-    items: [{ id: "evaluation", label: "성능 비교" }]
   },
   {
     title: "확장 RAG",

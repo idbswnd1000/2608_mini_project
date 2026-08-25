@@ -22,6 +22,8 @@ from app.services.vector_search_service import (
 
 
 DEFAULT_MAX_SEARCH_ROUNDS = 2
+MAX_QUERIES_PER_ROUND = 3
+MIN_CONTEXT_SIMILARITY = 0.3
 
 
 @dataclass
@@ -75,6 +77,20 @@ def select_accumulated_context(
             result = results[index]
             if result.chunk_id in seen_chunk_ids:
                 continue
+            if result.similarity < MIN_CONTEXT_SIMILARITY:
+                continue
+            selected.append(result)
+            seen_chunk_ids.add(result.chunk_id)
+            if len(selected) >= top_k:
+                return selected
+
+    if selected:
+        return selected
+
+    for results in round_results:
+        for result in results:
+            if result.chunk_id in seen_chunk_ids:
+                continue
             selected.append(result)
             seen_chunk_ids.add(result.chunk_id)
             if len(selected) >= top_k:
@@ -83,23 +99,54 @@ def select_accumulated_context(
     return selected
 
 
+def unique_queries(primary_query: str | None, extra_queries: list[str] | None = None) -> list[str]:
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    for query in [primary_query, *(extra_queries or [])]:
+        normalized = str(query or "").strip()
+        key = normalized.lower()
+        if not normalized or key in seen:
+            continue
+        queries.append(normalized)
+        seen.add(key)
+        if len(queries) >= MAX_QUERIES_PER_ROUND:
+            break
+
+    return queries
+
+
+def dedupe_candidates(candidates: list[SearchResult]) -> list[SearchResult]:
+    best_by_chunk_id: dict[int, SearchResult] = {}
+    for candidate in candidates:
+        previous = best_by_chunk_id.get(candidate.chunk_id)
+        if previous is None or candidate.distance < previous.distance:
+            best_by_chunk_id[candidate.chunk_id] = candidate
+    return sorted(best_by_chunk_id.values(), key=lambda result: result.distance)
+
+
 def build_search_history_entry(
     search_round: int,
     query: str,
     candidates: list[SearchResult],
     results: list[RerankedResult],
     evaluation: ContextEvaluationResult,
+    queries: list[str] | None = None,
+    query_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     top_similarity = results[0].similarity if results else None
     return {
         "round": search_round,
         "query": query,
+        "queries": queries or [query],
+        "query_results": query_results or [],
         "candidate_count": len(candidates),
         "retrieved_chunk_ids": [result.chunk_id for result in results],
         "top_similarity": top_similarity,
         "sufficient": evaluation.sufficient,
         "reason": evaluation.reason,
         "next_query": evaluation.next_query,
+        "next_queries": evaluation.next_queries,
         "supporting_chunk_ids": evaluation.supporting_chunk_ids,
         "covered_requirements": evaluation.covered_requirements,
         "missing_requirements": evaluation.missing_requirements,
@@ -136,6 +183,7 @@ async def run_agentic_rag(
     evaluation_input_tokens: list[int | None] = []
     evaluation_output_tokens: list[int | None] = []
     current_query = normalized_question
+    round_queries: list[str] = [normalized_question]
     final_results: list[RerankedResult] = []
     evaluations: list[ContextEvaluationResult] = []
     merged_candidates: dict[int, SearchResult] = {}
@@ -156,32 +204,50 @@ async def run_agentic_rag(
     )
     if decision.needs_search:
         current_query = decision.query
+        round_queries = unique_queries(decision.query, decision.sub_queries)
+    else:
+        round_queries = [current_query]
 
     completed_rounds = 0
     for search_round in range(1, max_search_rounds + 1):
         completed_rounds = search_round
+        round_candidates: list[SearchResult] = []
+        query_result_details: list[dict[str, Any]] = []
 
-        candidates, round_retrieval_ms = await search_round_step(
-            steps,
-            event_callback,
-            current_query,
-            candidate_k,
-            search_round,
-        )
-        retrieval_ms += round_retrieval_ms
-        merge_candidates(merged_candidates, candidates)
+        for query_index, query in enumerate(round_queries, start=1):
+            candidates, round_retrieval_ms = await search_round_step(
+                steps,
+                event_callback,
+                query,
+                candidate_k,
+                search_round,
+                query_index=query_index,
+            )
+            retrieval_ms += round_retrieval_ms
+            merge_candidates(merged_candidates, candidates)
+            round_candidates.extend(candidates)
 
-        round_results, round_rerank_ms = await rerank_round_step(
-            steps,
-            event_callback,
-            current_query,
-            candidates,
-            top_k,
-            search_round,
-        )
-        rerank_ms += round_rerank_ms
-        round_contexts.append(round_results)
+            query_results, round_rerank_ms = await rerank_round_step(
+                steps,
+                event_callback,
+                query,
+                candidates,
+                top_k,
+                search_round,
+                query_index=query_index,
+            )
+            rerank_ms += round_rerank_ms
+            round_contexts.append(query_results)
+            query_result_details.append(
+                {
+                    "query": query,
+                    "candidate_count": len(candidates),
+                    "retrieved_chunk_ids": [result.chunk_id for result in query_results],
+                }
+            )
+
         final_results = select_accumulated_context(round_contexts, top_k)
+        deduped_round_candidates = dedupe_candidates(round_candidates)
 
         evaluation, round_evaluation_ms = await context_evaluation_step(
             steps,
@@ -201,15 +267,18 @@ async def run_agentic_rag(
             build_search_history_entry(
                 search_round=search_round,
                 query=current_query,
-                candidates=candidates,
+                candidates=deduped_round_candidates,
                 results=final_results,
                 evaluation=evaluation,
+                queries=round_queries,
+                query_results=query_result_details,
             )
         )
 
         if evaluation.sufficient:
             break
-        if not evaluation.next_query:
+        round_queries = unique_queries(evaluation.next_query, evaluation.next_queries)
+        if not round_queries:
             break
         if search_round == max_search_rounds:
             break
@@ -220,8 +289,9 @@ async def run_agentic_rag(
             evaluation.reason,
             evaluation.missing_requirements,
             search_round,
+            next_queries=round_queries,
         )
-        current_query = evaluation.next_query
+        current_query = round_queries[0]
 
     if evaluations and not evaluations[-1].sufficient and completed_rounds == max_search_rounds:
         await retry_limit_step(steps, event_callback, completed_rounds, max_search_rounds)
@@ -312,6 +382,7 @@ async def agent_decision_step(
         "completed",
         elapsed_ms=elapsed_ms,
         query=result.query,
+        sub_queries=result.sub_queries,
         reason=result.reason,
         needs_search=result.needs_search,
     )
@@ -324,6 +395,7 @@ async def search_round_step(
     query: str,
     candidate_k: int,
     search_round: int,
+    query_index: int = 1,
 ) -> tuple[list[SearchResult], int]:
     step_name = "vector_search" if search_round == 1 else "retry_search"
     await emit_event(
@@ -332,6 +404,7 @@ async def search_round_step(
         step_name,
         "started",
         search_round=search_round,
+        query_index=query_index,
         query=query,
     )
     started_at = time.perf_counter()
@@ -347,6 +420,7 @@ async def search_round_step(
         "completed",
         elapsed_ms=elapsed_ms,
         search_round=search_round,
+        query_index=query_index,
         query=query,
         candidate_count=len(candidates),
     )
@@ -360,6 +434,7 @@ async def rerank_round_step(
     candidates: list[SearchResult],
     top_k: int,
     search_round: int,
+    query_index: int = 1,
 ) -> tuple[list[RerankedResult], int]:
     await emit_event(
         steps,
@@ -367,6 +442,7 @@ async def rerank_round_step(
         "reranking",
         "started",
         search_round=search_round,
+        query_index=query_index,
     )
     started_at = time.perf_counter()
     results = rerank_chunks(query, candidates, top_k=top_k)
@@ -378,6 +454,7 @@ async def rerank_round_step(
         "completed",
         elapsed_ms=elapsed_ms,
         search_round=search_round,
+        query_index=query_index,
         result_count=len(results),
     )
     return results, elapsed_ms
@@ -411,6 +488,7 @@ async def context_evaluation_step(
         sufficient=result.sufficient,
         reason=result.reason,
         next_query=result.next_query,
+        next_queries=result.next_queries,
         covered_requirements=result.covered_requirements,
         missing_requirements=result.missing_requirements,
     )
@@ -428,6 +506,7 @@ async def query_refinement_step(
     reason: str,
     missing_requirements: list[str],
     search_round: int,
+    next_queries: list[str] | None = None,
 ) -> None:
     started_at = time.perf_counter()
     await emit_event(
@@ -438,6 +517,7 @@ async def query_refinement_step(
         search_round=search_round,
         reason=reason,
         missing_requirements=missing_requirements,
+        next_queries=next_queries or [next_query],
     )
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     await emit_event(
@@ -448,6 +528,7 @@ async def query_refinement_step(
         elapsed_ms=elapsed_ms,
         search_round=search_round,
         query=next_query,
+        queries=next_queries or [next_query],
         reason=reason,
         missing_requirements=missing_requirements,
     )

@@ -5,6 +5,7 @@ export type LectureAction =
   | "GO_ADVANCED"
   | "GO_AGENTIC"
   | "GO_COMPARISON"
+  | "GO_RAG_COMPARISON"
   | "GO_MULTIMODAL"
   | "GO_AGENTIC_MULTIMODAL";
 
@@ -29,6 +30,7 @@ export const actionToPageId: Record<LectureAction, PageId> = {
   GO_ADVANCED: "advanced",
   GO_AGENTIC: "agentic",
   GO_COMPARISON: "comparison",
+  GO_RAG_COMPARISON: "ragComparison",
   GO_MULTIMODAL: "multimodal",
   GO_AGENTIC_MULTIMODAL: "graphrag"
 };

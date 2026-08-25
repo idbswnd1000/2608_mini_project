@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent } from "react";
-import { matchBrowserLectureCommand } from "../services/browserSpeechCommandMatcher";
+import type { ChangeEvent, FormEvent } from "react";
+import {
+  extractBrowserCommandSegment,
+  matchBrowserLectureCommand,
+  normalizeSpeechText,
+} from "../services/browserSpeechCommandMatcher";
 import { sendLectureCommand } from "../services/lectureControl";
 import type { LectureAction } from "../services/lectureControl";
 
@@ -48,12 +52,22 @@ declare global {
 
 type MicStatus = "off" | "listening" | "command" | "error";
 type FileStatus = "idle" | "loading" | "listening" | "command" | "no-command" | "error";
+type CommandTestResult = {
+  input: string;
+  normalized: string;
+  segment: string;
+  action: LectureAction | null;
+  message: string | null;
+};
 
 const ACCEPTED_AUDIO_EXTENSIONS = [".mp3", ".m4a", ".wav", ".webm", ".ogg"];
 const ACCEPTED_AUDIO_INPUT = ACCEPTED_AUDIO_EXTENSIONS.join(",");
 const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 const RECENT_TRANSCRIPT_MAX_CHARS = 220;
 const COMMAND_LOCK_MS = 2800;
+const RESTART_DELAY_MS = 350;
+const MAX_TRANSIENT_RESTART_ATTEMPTS = 3;
+const LIVE_TRANSCRIPT_INACTIVITY_MS = 5000;
 
 export function MicrophonePage() {
   const [connection, setConnection] = useState<"unknown" | "connected" | "disconnected">("unknown");
@@ -67,6 +81,9 @@ export function MicrophonePage() {
   const [fileFinalTranscript, setFileFinalTranscript] = useState("");
   const [fileInterimTranscript, setFileInterimTranscript] = useState("");
   const [fileDetectedCommand, setFileDetectedCommand] = useState<LectureAction | null>(null);
+  const [commandTestInput, setCommandTestInput] = useState("");
+  const [commandTestResult, setCommandTestResult] = useState<CommandTestResult | null>(null);
+  const [commandTestSending, setCommandTestSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const fileRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
@@ -74,6 +91,8 @@ export function MicrophonePage() {
   const shouldListenRef = useRef(false);
   const recognitionRunningRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
+  const restartAttemptRef = useRef(0);
+  const liveInactivityTimerRef = useRef<number | null>(null);
   const liveFinalTranscriptRef = useRef("");
   const fileFinalTranscriptRef = useRef("");
   const liveCommandFinalBufferRef = useRef("");
@@ -221,6 +240,51 @@ export function MicrophonePage() {
     }
   }
 
+  function clearLiveInactivityTimer() {
+    if (liveInactivityTimerRef.current != null) {
+      window.clearTimeout(liveInactivityTimerRef.current);
+      liveInactivityTimerRef.current = null;
+    }
+  }
+
+  function resetLiveTranscript() {
+    clearLiveInactivityTimer();
+    liveFinalTranscriptRef.current = "";
+    liveCommandFinalBufferRef.current = "";
+    liveCommandInterimRef.current = "";
+    setLiveFinalTranscript("");
+    setLiveInterimTranscript("");
+  }
+
+  function scheduleLiveTranscriptReset() {
+    clearLiveInactivityTimer();
+    liveInactivityTimerRef.current = window.setTimeout(() => {
+      resetLiveTranscript();
+    }, LIVE_TRANSCRIPT_INACTIVITY_MS);
+  }
+
+  function isFatalRecognitionError(error: string) {
+    const normalized = error.toLowerCase();
+    return (
+      normalized.includes("not-allowed") ||
+      normalized.includes("service-not-allowed") ||
+      normalized.includes("permission") ||
+      normalized.includes("audio-capture") ||
+      normalized.includes("microphone")
+    );
+  }
+
+  function scheduleRecognitionRestart(delayMs = RESTART_DELAY_MS) {
+    clearRestartTimer();
+    if (!shouldListenRef.current) return;
+
+    restartTimerRef.current = window.setTimeout(() => {
+      if (shouldListenRef.current) {
+        startRecognition();
+      }
+    }, delayMs);
+  }
+
   function createRecognition() {
     const Recognition = getSpeechRecognitionConstructor();
     if (!Recognition) return null;
@@ -233,8 +297,9 @@ export function MicrophonePage() {
     recognition.onerror = (event) => {
       setError(event.message || `Speech recognition error: ${event.error}`);
       setMicStatus("error");
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      if (isFatalRecognitionError(event.error)) {
         shouldListenRef.current = false;
+        clearRestartTimer();
       }
     };
     recognition.onend = () => {
@@ -244,12 +309,7 @@ export function MicrophonePage() {
         return;
       }
 
-      clearRestartTimer();
-      restartTimerRef.current = window.setTimeout(() => {
-        if (shouldListenRef.current) {
-          startRecognition();
-        }
-      }, 350);
+      scheduleRecognitionRestart();
     };
 
     return recognition;
@@ -292,18 +352,31 @@ export function MicrophonePage() {
     }
 
     try {
+      liveLastFinalResultIndexRef.current = -1;
       recognition.start();
       recognitionRunningRef.current = true;
+      restartAttemptRef.current = 0;
       setMicStatus("listening");
     } catch (reason) {
       if (String(reason).includes("already started")) {
         recognitionRunningRef.current = true;
+        restartAttemptRef.current = 0;
         setMicStatus("listening");
         return;
       }
-      setError(reason instanceof Error ? reason.message : "Speech recognition failed to start.");
-      shouldListenRef.current = false;
+
+      const message = reason instanceof Error ? reason.message : "Speech recognition failed to start.";
+      setError(message);
+      recognitionRunningRef.current = false;
       setMicStatus("error");
+
+      if (shouldListenRef.current && !isFatalRecognitionError(message) && restartAttemptRef.current < MAX_TRANSIENT_RESTART_ATTEMPTS) {
+        restartAttemptRef.current += 1;
+        scheduleRecognitionRestart(RESTART_DELAY_MS * (restartAttemptRef.current + 1));
+        return;
+      }
+
+      shouldListenRef.current = false;
     }
   }
 
@@ -311,12 +384,14 @@ export function MicrophonePage() {
     if (shouldListenRef.current || recognitionRunningRef.current) return;
     setError(null);
     shouldListenRef.current = true;
+    restartAttemptRef.current = 0;
     startRecognition();
   }
 
   function stopMicrophone() {
     shouldListenRef.current = false;
     clearRestartTimer();
+    clearLiveInactivityTimer();
     const recognition = recognitionRef.current;
     if (recognition) {
       recognition.onend = null;
@@ -379,6 +454,8 @@ export function MicrophonePage() {
 
     if (!finalText && !interimText) return;
 
+    scheduleLiveTranscriptReset();
+
     if (finalText) {
       liveFinalTranscriptRef.current = appendTranscript(liveFinalTranscriptRef.current, finalText);
       liveCommandFinalBufferRef.current = appendTranscript(
@@ -402,6 +479,11 @@ export function MicrophonePage() {
     setLiveDetectedCommand(action);
     setMicStatus("command");
     void sendLectureCommand(action, recentTranscript)
+      .then((result) => {
+        if (result.broadcast) {
+          resetLiveTranscript();
+        }
+      })
       .catch((reason) => {
         setError(reason instanceof Error ? reason.message : "Lecture command failed");
         setMicStatus("error");
@@ -496,8 +578,58 @@ export function MicrophonePage() {
     return `${finalTranscript} ${interimTranscript}`.replace(/\s+/g, " ").trim();
   }
 
+  function evaluateCommandTestInput(input: string, message: string | null = null) {
+    const trimmedInput = input.trim();
+    const result: CommandTestResult = {
+      input: trimmedInput,
+      normalized: normalizeSpeechText(trimmedInput),
+      segment: extractBrowserCommandSegment(trimmedInput),
+      action: matchBrowserLectureCommand(trimmedInput),
+      message,
+    };
+    setCommandTestResult(result);
+    return result;
+  }
+
+  function confirmCommandTest() {
+    evaluateCommandTestInput(commandTestInput);
+  }
+
+  function submitCommandTest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    confirmCommandTest();
+  }
+
+  async function executeCommandTest() {
+    const result = evaluateCommandTestInput(commandTestInput);
+    if (!result.action) {
+      setCommandTestResult({
+        ...result,
+        message: "명령을 인식하지 못했습니다.",
+      });
+      return;
+    }
+
+    setCommandTestSending(true);
+    try {
+      await sendLectureCommand(result.action, result.input);
+      setCommandTestResult({
+        ...result,
+        message: "명령을 전송했습니다.",
+      });
+    } catch (reason) {
+      setCommandTestResult({
+        ...result,
+        message: reason instanceof Error ? reason.message : "명령 전송에 실패했습니다.",
+      });
+    } finally {
+      setCommandTestSending(false);
+    }
+  }
+
   const liveDisplayTranscript = displayTranscript(liveFinalTranscript, liveInterimTranscript);
   const fileDisplayTranscript = displayTranscript(fileFinalTranscript, fileInterimTranscript);
+  const isMicOn = micStatus === "listening" || micStatus === "command";
 
   return (
     <main className="mic-page">
@@ -536,7 +668,13 @@ export function MicrophonePage() {
 
         <section className="mic-section">
           <div className="mic-section-heading">
-            <span>LIVE MICROPHONE</span>
+            <div className="mic-section-title-row">
+              <span>LIVE MICROPHONE</span>
+              <span className={`mic-state-badge ${isMicOn ? "on" : "off"}`}>
+                <span aria-hidden="true" />
+                {isMicOn ? "MIC ON" : "MIC OFF"}
+              </span>
+            </div>
             <p>Use after browser microphone permission is available.</p>
           </div>
           <div className="mic-actions">
@@ -554,6 +692,49 @@ export function MicrophonePage() {
           <div className="mic-transcript">
             <span>Detected Command</span>
             <p>{liveDetectedCommand ?? "-"}</p>
+          </div>
+        </section>
+
+        <section className="mic-section command-test-section">
+          <div className="mic-section-heading">
+            <span>COMMAND TEST</span>
+            <p>Test the current browser command matcher without using the microphone.</p>
+          </div>
+          <form className="command-test-form" onSubmit={submitCommandTest}>
+            <input
+              type="text"
+              value={commandTestInput}
+              onChange={(event) => setCommandTestInput(event.target.value)}
+              placeholder="네이버로 넘어가겠습니다"
+            />
+            <button type="submit">명령 확인</button>
+            <button type="button" onClick={executeCommandTest} disabled={commandTestSending}>
+              {commandTestSending ? "전송 중" : "명령 실행"}
+            </button>
+          </form>
+          <div className="command-test-result">
+            <div>
+              <span>원본 입력</span>
+              <p>{commandTestResult?.input || "-"}</p>
+            </div>
+            <div>
+              <span>정규화</span>
+              <p>{commandTestResult?.normalized || "-"}</p>
+            </div>
+            <div>
+              <span>명령 구간</span>
+              <p>{commandTestResult?.segment || "-"}</p>
+            </div>
+            <div>
+              <span>Action</span>
+              <p>{commandTestResult ? commandTestResult.action ?? "명령 없음" : "-"}</p>
+            </div>
+            {commandTestResult?.message && (
+              <div className="command-test-message">
+                <span>상태</span>
+                <p>{commandTestResult.message}</p>
+              </div>
+            )}
           </div>
         </section>
 

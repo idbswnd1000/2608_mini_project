@@ -15,6 +15,7 @@ Return only valid JSON with these fields:
 {
   "needs_search": true,
   "query": "one concise search query",
+  "sub_queries": ["optional focused search query for one requirement"],
   "reason": "short reason",
   "expected_intent": "short intent label",
   "search_strategy": "vector_search"
@@ -22,6 +23,9 @@ Return only valid JSON with these fields:
 Keep the query faithful to the original question.
 Preserve important conditions and constraints from the user's question.
 For multi-part questions, include all important intents in the query.
+For complex multi-condition questions, also provide up to 3 sub_queries, each focused on a distinct important requirement.
+Do not include duplicate sub_queries or queries that are broader than query.
+If the user's question is in Korean, write query and reason in natural Korean.
 Do not add facts.
 """.strip()
 
@@ -30,6 +34,7 @@ Do not add facts.
 class AgentDecisionResult:
     needs_search: bool
     query: str
+    sub_queries: list[str]
     reason: str
     expected_intent: str | None
     search_strategy: str
@@ -57,7 +62,8 @@ def fallback_decision(question: str, error: str | None = None) -> AgentDecisionR
     return AgentDecisionResult(
         needs_search=True,
         query=question,
-        reason="Fallback to searching with the original question.",
+        sub_queries=[],
+        reason="원문 질문으로 검색합니다.",
         expected_intent=None,
         search_strategy="vector_search",
         provider="openai",
@@ -91,9 +97,11 @@ def _make_decision_sync(question: str) -> AgentDecisionResult:
         return result
 
     query = str(payload.get("query") or question).strip() or question
+    sub_queries = normalize_query_list(payload.get("sub_queries"), query)
     return AgentDecisionResult(
         needs_search=bool(payload.get("needs_search", True)),
         query=query,
+        sub_queries=sub_queries,
         reason=str(payload.get("reason") or "Search decision completed."),
         expected_intent=payload.get("expected_intent"),
         search_strategy=str(payload.get("search_strategy") or "vector_search"),
@@ -111,3 +119,21 @@ async def make_agent_decision(question: str) -> AgentDecisionResult:
         return await asyncio.to_thread(_make_decision_sync, question)
     except OpenAIError as exc:
         return fallback_decision(question, str(exc))
+
+
+def normalize_query_list(value: object, primary_query: str, limit: int = 3) -> list[str]:
+    if not isinstance(value, list):
+        return []
+
+    normalized: list[str] = []
+    seen = {primary_query.strip().lower()}
+    for item in value:
+        query = str(item).strip()
+        key = query.lower()
+        if not query or key in seen:
+            continue
+        normalized.append(query)
+        seen.add(key)
+        if len(normalized) >= limit:
+            break
+    return normalized

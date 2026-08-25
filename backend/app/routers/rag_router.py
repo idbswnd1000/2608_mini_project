@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -9,6 +10,7 @@ from app.rag.naive import run_naive_rag
 
 
 router = APIRouter(prefix="/rag", tags=["rag"])
+logger = logging.getLogger(__name__)
 
 
 class NaiveRAGRequest(BaseModel):
@@ -138,6 +140,7 @@ async def naive_rag(request: NaiveRAGRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception("naive RAG failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if not result["retrieved_chunks"]:
@@ -157,6 +160,7 @@ async def advanced_rag(request: AdvancedRAGRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception("advanced RAG failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if not result["retrieved_chunks"]:
@@ -177,6 +181,7 @@ async def agentic_rag(request: AgenticRAGRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        logger.exception("agentic RAG failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if not result["retrieved_chunks"]:

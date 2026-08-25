@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import sys
 from collections import Counter
 from pathlib import Path
@@ -93,6 +94,7 @@ async def run_missing_results(
     question_keys: list[str],
     rag_types: list[str],
     evaluation_mode: str,
+    force_agentic: bool = False,
 ) -> tuple[int, int, int]:
     completed = 0
     skipped = 0
@@ -106,13 +108,18 @@ async def run_missing_results(
             if rag_type not in SUPPORTED_RAG_TYPES:
                 raise ValueError(f"unsupported rag_type: {rag_type}")
             label = f"[{index}/{total}] {evaluation_mode} {question_key} - {rag_type}"
+            force_result = (
+                force_agentic
+                and evaluation_mode == "retrieval"
+                and rag_type == "agentic"
+            )
 
-            if await result_exists(question_key, rag_type, evaluation_mode):
+            if not force_result and await result_exists(question_key, rag_type, evaluation_mode):
                 skipped += 1
                 print(f"{label} SKIP")
                 continue
 
-            print(f"{label} RUN")
+            print(f"{label} {'FORCE' if force_result else 'RUN'}")
             try:
                 result = await run_and_store_evaluation(
                     question_key=question_key,
@@ -154,7 +161,23 @@ def print_summary_block(name: str, summary: dict) -> None:
             )
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run stored RAG evaluation results.",
+    )
+    parser.add_argument(
+        "--force-agentic",
+        action="store_true",
+        help=(
+            "Recalculate only existing agentic retrieval results. "
+            "Naive, Advanced, and full-mode rows still use the existing SKIP logic."
+        ),
+    )
+    return parser.parse_args()
+
+
 async def main() -> None:
+    args = parse_args()
     engine.echo = False
     await ensure_evaluation_mode_column()
     await count_results()
@@ -183,6 +206,7 @@ async def main() -> None:
         question_keys=question_keys,
         rag_types=RAG_TYPES,
         evaluation_mode="retrieval",
+        force_agentic=args.force_agentic,
     )
 
     print("Representative Full RAG set")
@@ -190,6 +214,7 @@ async def main() -> None:
         question_keys=REPRESENTATIVE_FULL_QUESTION_KEYS,
         rag_types=RAG_TYPES,
         evaluation_mode="full",
+        force_agentic=args.force_agentic,
     )
 
     summary = await get_evaluation_summary()

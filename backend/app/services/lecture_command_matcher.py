@@ -7,6 +7,7 @@ LectureAction = Literal[
     "GO_ADVANCED",
     "GO_AGENTIC",
     "GO_COMPARISON",
+    "GO_RAG_COMPARISON",
     "GO_MULTIMODAL",
     "GO_AGENTIC_MULTIMODAL",
 ]
@@ -16,12 +17,36 @@ SENTENCE_BOUNDARY_PATTERN = re.compile(r"[.!?。．！？\r\n]+")
 SHORT_PRECEDING_CHARS = 24
 SHORT_FOLLOWING_CHARS = 32
 MAX_PREVIOUS_SEGMENT_CHARS = 12
-NAIVE_KEYWORDS = ("naive", "네이브", "네이블", "네이브렉")
+NAIVE_KEYWORDS = (
+    "naive",
+    "네이브",
+    "네이버",
+    "네이블",
+    "네이브렉",
+    "네이브래그",
+    "네이브레그",
+    "네이블래그",
+)
+ADVANCED_KEYWORDS = ("어드밴스드", "어드밴스", "어드벤스드", "어드벤스")
+AGENTIC_KEYWORDS = ("에이전틱", "에이전트", "에이전티")
+MULTIMODAL_KEYWORDS = ("멀티모달", "멀티모델")
+RAG_COMPARISON_KEYWORDS = (
+    "답변비교",
+    "질문답변비교",
+    "세가지질문답변비교",
+    "세가지답변비교",
+    "세가지질문비교",
+    "세가지질문답변",
+)
+COMPARISON_KEYWORDS = ("래그비교", "레그비교", "rag비교", "구조비교")
+AGENTIC_MULTIMODAL_KEYWORDS = ("결합모델",)
 PAGE_KEYWORDS = (
-    "비교",
-    "어드밴스드",
-    "에이전틱",
-    "멀티모달",
+    *RAG_COMPARISON_KEYWORDS,
+    *COMPARISON_KEYWORDS,
+    *ADVANCED_KEYWORDS,
+    *AGENTIC_KEYWORDS,
+    *MULTIMODAL_KEYWORDS,
+    *AGENTIC_MULTIMODAL_KEYWORDS,
     *NAIVE_KEYWORDS,
 )
 
@@ -76,18 +101,17 @@ def match_lecture_command(transcript: str) -> LectureAction | None:
     if not command_segment:
         return None
 
-    has_agentic = "에이전틱" in command_segment
-    has_multimodal = "멀티모달" in command_segment
-
-    if has_agentic and has_multimodal:
+    if has_any_keyword(command_segment, AGENTIC_MULTIMODAL_KEYWORDS):
         return "GO_AGENTIC_MULTIMODAL"
-    if has_multimodal:
+    if has_any_keyword(command_segment, MULTIMODAL_KEYWORDS):
         return "GO_MULTIMODAL"
-    if "비교" in command_segment:
+    if has_any_keyword(command_segment, RAG_COMPARISON_KEYWORDS):
+        return "GO_RAG_COMPARISON"
+    if has_any_keyword(command_segment, COMPARISON_KEYWORDS):
         return "GO_COMPARISON"
-    if "어드밴스드" in command_segment:
+    if has_any_keyword(command_segment, ADVANCED_KEYWORDS):
         return "GO_ADVANCED"
-    if has_agentic:
+    if has_any_keyword(command_segment, AGENTIC_KEYWORDS):
         return "GO_AGENTIC"
     if has_any_keyword(command_segment, NAIVE_KEYWORDS):
         return "GO_NAIVE"

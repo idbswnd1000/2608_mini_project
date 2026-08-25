@@ -18,6 +18,7 @@ Return only valid JSON with these fields:
   "missing_requirements": [],
   "reason": "short reason",
   "next_query": null,
+  "next_queries": [],
   "supporting_chunk_ids": [1, 2]
 }
 First identify the user's main requirements. A requirement is a distinct question part, condition, eligibility, limitation, or requested procedure.
@@ -32,7 +33,10 @@ Example: general cancellation steps alone are insufficient for an undelivered-or
 When sufficient=true, supporting_chunk_ids must list the chunk numbers that support every important part.
 When sufficient=false, covered_requirements must list what is supported, missing_requirements must list what is not supported, and next_query must search specifically for the missing requirements.
 When sufficient=false, next_query must be different from the current search query and must target the missing requirements with more specific terms.
+When there are multiple missing_requirements, also return next_queries with up to 3 focused search queries. Each query should target a distinct missing requirement.
+Prefer concrete requirement-specific next_queries over repeating the original question.
 If there is no useful different query to try, set next_query to null.
+If the user's question is in Korean, write covered_requirements, missing_requirements, reason, and next_query in natural Korean.
 Do not add facts.
 """.strip()
 
@@ -42,6 +46,7 @@ class ContextEvaluationResult:
     sufficient: bool
     reason: str
     next_query: str | None
+    next_queries: list[str]
     supporting_chunk_ids: list[int]
     covered_requirements: list[str]
     missing_requirements: list[str]
@@ -73,8 +78,9 @@ def fallback_evaluation(
 ) -> ContextEvaluationResult:
     return ContextEvaluationResult(
         sufficient=True,
-        reason="Fallback evaluation: use currently retrieved context.",
+        reason="현재 검색된 컨텍스트를 사용합니다.",
         next_query=None,
+        next_queries=[],
         supporting_chunk_ids=[],
         covered_requirements=[],
         missing_requirements=[],
@@ -115,6 +121,9 @@ def _evaluate_context_sync(
     next_query = payload.get("next_query")
     if next_query is not None:
         next_query = str(next_query).strip() or None
+    next_queries = normalize_query_list(payload.get("next_queries"), next_query)
+    if next_query is None and next_queries:
+        next_query = next_queries[0]
 
     sufficient_value = payload.get("sufficient", True)
     if isinstance(sufficient_value, str):
@@ -137,6 +146,7 @@ def _evaluate_context_sync(
         sufficient=sufficient,
         reason=str(payload.get("reason") or "Context evaluation completed."),
         next_query=next_query,
+        next_queries=next_queries,
         supporting_chunk_ids=supporting_chunk_ids,
         covered_requirements=covered_requirements,
         missing_requirements=missing_requirements,
@@ -164,3 +174,27 @@ def normalize_string_list(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item).strip() for item in value if str(item).strip()]
+
+
+def normalize_query_list(value: object, primary_query: str | None, limit: int = 3) -> list[str]:
+    if not isinstance(value, list):
+        return []
+
+    normalized: list[str] = []
+    seen: set[str] = set()
+    if primary_query:
+        seen.add(primary_query.strip().lower())
+
+    for item in value:
+        query = str(item).strip()
+        key = query.lower()
+        if not query or key in seen:
+            continue
+        normalized.append(query)
+        seen.add(key)
+        if len(normalized) >= limit:
+            break
+
+    if primary_query and primary_query.strip():
+        return [primary_query, *normalized][:limit]
+    return normalized

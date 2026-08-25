@@ -32,7 +32,7 @@ services:
         condition: service_healthy
 
     env_file:
-      - ./backend/.env
+      - ./.env
 
     environment:
       DATABASE_URL: postgresql+asyncpg://rag_user:12345678@postgres:5432/rag_db

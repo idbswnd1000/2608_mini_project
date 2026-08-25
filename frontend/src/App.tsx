@@ -5,11 +5,10 @@ import { ComparisonSection } from "./components/lecture/ComparisonSection";
 import { EvolutionSection } from "./components/lecture/EvolutionSection";
 import { NaiveLectureSection } from "./components/lecture/NaiveLectureSection";
 import { useLectureControlSocket } from "./hooks/useLectureControlSocket";
-import { EvaluationPage } from "./pages/EvaluationPage";
 import { GraphRagPage } from "./pages/GraphRagPage";
 import { MicrophonePage } from "./pages/MicrophonePage";
 import { MultimodalRagPage } from "./pages/MultimodalRagPage";
-import { PlaygroundPage } from "./pages/PlaygroundPage";
+import { RagComparisonPage } from "./pages/RagComparisonPage";
 import { NavigationAction, PageId, orderedPages } from "./navigation/navigation";
 
 export function App() {
@@ -46,8 +45,7 @@ export function App() {
       {activePage === "advanced" && <EvolutionSection ragStage="advanced" />}
       {activePage === "agentic" && <EvolutionSection ragStage="agentic" />}
       {activePage === "comparison" && <ComparisonSection />}
-      {activePage === "playground" && <PlaygroundPage />}
-      {activePage === "evaluation" && <EvaluationPage />}
+      {activePage === "ragComparison" && <RagComparisonPage />}
       {activePage === "graphrag" && <GraphRagPage />}
       {activePage === "multimodal" && <MultimodalRagPage />}
     </AppShell>

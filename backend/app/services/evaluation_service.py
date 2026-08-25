@@ -1,3 +1,4 @@
+import json
 import time
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -20,12 +21,14 @@ from app.rag.agentic import (
     agent_decision_step,
     build_search_history_entry,
     context_evaluation_step,
+    dedupe_candidates,
     merge_candidates,
     query_refinement_step,
     rerank_round_step,
     retry_limit_step,
     search_round_step,
     select_accumulated_context,
+    unique_queries,
 )
 from app.rag.naive import (
     Metrics,
@@ -57,6 +60,27 @@ REPRESENTATIVE_FULL_QUESTION_KEYS = [
     "complex_02",
     "complex_03",
 ]
+
+
+def normalize_expected_intents(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(item) for item in value if item is not None]
+    if isinstance(value, str):
+        normalized = value.strip()
+        if not normalized:
+            return []
+        try:
+            parsed = json.loads(normalized)
+        except json.JSONDecodeError:
+            return [normalized]
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed if item is not None]
+        if parsed is None:
+            return []
+        return [str(parsed)]
+    return [str(value)]
 
 
 @dataclass
@@ -265,6 +289,7 @@ async def run_agentic_retrieval_only(
     evaluation_input_tokens: list[int | None] = []
     evaluation_output_tokens: list[int | None] = []
     current_query = normalized_question
+    round_queries: list[str] = [normalized_question]
     final_results = []
     evaluations = []
     merged_candidates = {}
@@ -285,31 +310,53 @@ async def run_agentic_retrieval_only(
     )
     if decision.needs_search:
         current_query = decision.query
+        round_queries = unique_queries(decision.query, decision.sub_queries)
+    else:
+        round_queries = [current_query]
 
     completed_rounds = 0
     for search_round in range(1, max_search_rounds + 1):
         completed_rounds = search_round
-        candidates, round_retrieval_ms = await search_round_step(
-            steps,
-            None,
-            current_query,
-            candidate_k,
-            search_round,
-        )
-        retrieval_ms += round_retrieval_ms
-        merge_candidates(merged_candidates, candidates)
+        round_candidates = []
+        query_result_details = []
 
-        round_results, round_rerank_ms = await rerank_round_step(
-            steps,
-            None,
-            current_query,
-            candidates,
-            top_k,
-            search_round,
-        )
-        rerank_ms += round_rerank_ms
-        round_contexts.append(round_results)
+        for query_index, query in enumerate(round_queries, start=1):
+            candidates, round_retrieval_ms = await search_round_step(
+                steps,
+                None,
+                query,
+                candidate_k,
+                search_round,
+                query_index=query_index,
+            )
+            retrieval_ms += round_retrieval_ms
+            merge_candidates(merged_candidates, candidates)
+            round_candidates.extend(candidates)
+
+            query_results, round_rerank_ms = await rerank_round_step(
+                steps,
+                None,
+                query,
+                candidates,
+                top_k,
+                search_round,
+                query_index=query_index,
+            )
+            rerank_ms += round_rerank_ms
+            round_contexts.append(query_results)
+            query_result_details.append(
+                {
+                    "query": query,
+                    "candidate_count": len(candidates),
+                    "retrieved_chunk_ids": [
+                        result.chunk_id
+                        for result in query_results
+                    ],
+                }
+            )
+
         final_results = select_accumulated_context(round_contexts, top_k)
+        deduped_round_candidates = dedupe_candidates(round_candidates)
 
         evaluation, round_evaluation_ms = await context_evaluation_step(
             steps,
@@ -329,15 +376,18 @@ async def run_agentic_retrieval_only(
             build_search_history_entry(
                 search_round=search_round,
                 query=current_query,
-                candidates=candidates,
+                candidates=deduped_round_candidates,
                 results=final_results,
                 evaluation=evaluation,
+                queries=round_queries,
+                query_results=query_result_details,
             )
         )
 
         if evaluation.sufficient:
             break
-        if not evaluation.next_query:
+        round_queries = unique_queries(evaluation.next_query, evaluation.next_queries)
+        if not round_queries:
             break
         if search_round == max_search_rounds:
             break
@@ -348,8 +398,9 @@ async def run_agentic_retrieval_only(
             evaluation.reason,
             evaluation.missing_requirements,
             search_round,
+            next_queries=round_queries,
         )
-        current_query = evaluation.next_query
+        current_query = round_queries[0]
 
     if evaluations and not evaluations[-1].sufficient and completed_rounds == max_search_rounds:
         await retry_limit_step(steps, None, completed_rounds, max_search_rounds)
@@ -509,8 +560,9 @@ async def run_and_store_evaluation(
         for chunk in rag_result.get("retrieved_chunks", [])
     ]
     retrieved_intents = await get_chunk_intents(chunk_ids)
+    expected_intents = normalize_expected_intents(question.expected_intents)
     retrieval_metrics = calculate_retrieval_metrics(
-        expected_intents=question.expected_intents,
+        expected_intents=expected_intents,
         retrieved_intents=retrieved_intents,
     )
     saved_result, action = await upsert_evaluation_result(
