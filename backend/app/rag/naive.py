@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from app.services.embedding_service import EMBEDDING_DIMENSION, embed_texts
+from app.services.embedding_service import EMBEDDING_DIMENSION, embed_texts_async
 from app.services.llm_service import generate_answer
 from app.services.vector_search_service import (
     SearchResult,
@@ -167,7 +167,7 @@ async def _build_context_async(results: list[SearchResult]) -> str:
 
 
 async def _embed_query_async(question: str) -> list[float]:
-    vector = embed_texts([question])[0]
+    vector = (await embed_texts_async([question]))[0]
     if len(vector) != EMBEDDING_DIMENSION:
         raise ValueError(f"query embedding dimension must be {EMBEDDING_DIMENSION}")
     return vector

@@ -12,9 +12,9 @@ from app.services.context_evaluation_service import (
     ContextEvaluationResult,
     evaluate_context,
 )
-from app.services.embedding_service import EMBEDDING_DIMENSION, embed_texts
+from app.services.embedding_service import EMBEDDING_DIMENSION, embed_texts_async
 from app.services.llm_service import LLMResult, generate_answer
-from app.services.reranker_service import RerankedResult, rerank_chunks
+from app.services.reranker_service import RerankedResult, rerank_chunks_async
 from app.services.vector_search_service import (
     SearchResult,
     search_similar_chunks_by_vector,
@@ -408,7 +408,7 @@ async def search_round_step(
         query=query,
     )
     started_at = time.perf_counter()
-    vector = embed_texts([query])[0]
+    vector = (await embed_texts_async([query]))[0]
     if len(vector) != EMBEDDING_DIMENSION:
         raise ValueError(f"query embedding dimension must be {EMBEDDING_DIMENSION}")
     candidates = await search_similar_chunks_by_vector(vector, top_k=candidate_k)
@@ -445,7 +445,7 @@ async def rerank_round_step(
         query_index=query_index,
     )
     started_at = time.perf_counter()
-    results = rerank_chunks(query, candidates, top_k=top_k)
+    results = await rerank_chunks_async(query, candidates, top_k=top_k)
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     await emit_event(
         steps,

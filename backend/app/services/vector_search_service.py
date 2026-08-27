@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from sqlalchemy import text
 
 from app.core.database import AsyncSessionLocal
-from app.services.embedding_service import embed_texts
+from app.services.embedding_service import embed_texts_async
 
 
 @dataclass
@@ -20,7 +20,7 @@ def to_vector_literal(vector: list[float]) -> str:
 
 
 async def search_similar_chunks(query: str, top_k: int = 5) -> list[SearchResult]:
-    query_vector = embed_texts([query])[0]
+    query_vector = (await embed_texts_async([query]))[0]
     return await search_similar_chunks_by_vector(query_vector, top_k=top_k)
 
 

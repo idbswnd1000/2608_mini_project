@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -11,6 +12,13 @@ from app.rag.naive import run_naive_rag
 
 router = APIRouter(prefix="/rag", tags=["rag"])
 logger = logging.getLogger(__name__)
+
+
+def log_rag_request(rag_type: str, phase: str, started_at: float | None = None) -> None:
+    elapsed = ""
+    if started_at is not None:
+        elapsed = f" elapsed_ms={int((time.perf_counter() - started_at) * 1000)}"
+    logger.info("[%s] %s%s", rag_type, phase, elapsed)
 
 
 class NaiveRAGRequest(BaseModel):
@@ -132,6 +140,8 @@ class AgenticRAGResponse(BaseModel):
 
 @router.post("/naive", response_model=NaiveRAGResponse)
 async def naive_rag(request: NaiveRAGRequest):
+    started_at = time.perf_counter()
+    log_rag_request("naive", "request start")
     try:
         result = await run_naive_rag(
             question=request.question,
@@ -146,11 +156,14 @@ async def naive_rag(request: NaiveRAGRequest):
     if not result["retrieved_chunks"]:
         raise HTTPException(status_code=404, detail="No relevant chunks found")
 
+    log_rag_request("naive", "response ready", started_at)
     return result
 
 
 @router.post("/advanced", response_model=AdvancedRAGResponse)
 async def advanced_rag(request: AdvancedRAGRequest):
+    started_at = time.perf_counter()
+    log_rag_request("advanced", "request start")
     try:
         result = await run_advanced_rag(
             question=request.question,
@@ -166,11 +179,14 @@ async def advanced_rag(request: AdvancedRAGRequest):
     if not result["retrieved_chunks"]:
         raise HTTPException(status_code=404, detail="No relevant chunks found")
 
+    log_rag_request("advanced", "response ready", started_at)
     return result
 
 
 @router.post("/agentic", response_model=AgenticRAGResponse)
 async def agentic_rag(request: AgenticRAGRequest):
+    started_at = time.perf_counter()
+    log_rag_request("agentic", "request start")
     try:
         result = await run_agentic_rag(
             question=request.question,
@@ -187,4 +203,5 @@ async def agentic_rag(request: AgenticRAGRequest):
     if not result["retrieved_chunks"]:
         raise HTTPException(status_code=404, detail="No relevant chunks found")
 
+    log_rag_request("agentic", "response ready", started_at)
     return result

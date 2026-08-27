@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 
@@ -47,3 +48,11 @@ def rerank_chunks(
     ]
     reranked.sort(key=lambda result: result.rerank_score, reverse=True)
     return reranked[:top_k]
+
+
+async def rerank_chunks_async(
+    query: str,
+    candidates: list[SearchResult],
+    top_k: int = 5,
+) -> list[RerankedResult]:
+    return await asyncio.to_thread(rerank_chunks, query, candidates, top_k)

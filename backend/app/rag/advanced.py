@@ -3,10 +3,10 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from app.rag.naive import EventCallback, emit_event, timed_step
-from app.services.embedding_service import EMBEDDING_DIMENSION, embed_texts
+from app.services.embedding_service import EMBEDDING_DIMENSION, embed_texts_async
 from app.services.llm_service import LLMResult, generate_answer
 from app.services.query_rewrite_service import QueryRewriteResult, rewrite_query
-from app.services.reranker_service import RerankedResult, rerank_chunks
+from app.services.reranker_service import RerankedResult, rerank_chunks_async
 from app.services.vector_search_service import search_similar_chunks_by_vector
 
 
@@ -185,7 +185,7 @@ async def embedding_step(
 ) -> tuple[list[float], int]:
     await emit_event(steps, callback, "embedding", "started")
     started_at = time.perf_counter()
-    vector = embed_texts([query])[0]
+    vector = (await embed_texts_async([query]))[0]
     if len(vector) != EMBEDDING_DIMENSION:
         raise ValueError(f"query embedding dimension must be {EMBEDDING_DIMENSION}")
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
@@ -230,7 +230,7 @@ async def reranking_step(
 ) -> tuple[list[RerankedResult], int]:
     await emit_event(steps, callback, "reranking", "started")
     started_at = time.perf_counter()
-    results = rerank_chunks(query, candidates, top_k=top_k)
+    results = await rerank_chunks_async(query, candidates, top_k=top_k)
     elapsed_ms = int((time.perf_counter() - started_at) * 1000)
     await emit_event(
         steps,

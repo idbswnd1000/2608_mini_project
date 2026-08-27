@@ -6,6 +6,7 @@ from openai import OpenAI, OpenAIError
 
 from app.core.config import settings
 from app.services.agent_decision_service import parse_json_object
+from app.services.openai_response_options import deterministic_response_options
 from app.services.reranker_service import RerankedResult
 
 
@@ -105,7 +106,7 @@ def _evaluate_context_sync(
         instructions=CONTEXT_EVALUATION_PROMPT,
         input=build_evaluation_input(question, chunks, search_query),
         max_output_tokens=360,
-        temperature=0,
+        **deterministic_response_options(settings.openai_model),
     )
     usage = response.usage
 

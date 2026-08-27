@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PresentationEvent, usePresentationRun } from "../../hooks/usePresentationRun";
+import { cleanCustomerAnswer } from "../../services/answerFormatting";
 
 type PresentationRun = ReturnType<typeof usePresentationRun>;
 
@@ -254,7 +255,7 @@ function TraceDetail({ event }: { event: PresentationEvent }) {
   if (event.step === "llm_generation") {
     return (
       <>
-        {typeof data.answer === "string" && <p className="trace-answer">{data.answer}</p>}
+        {typeof data.answer === "string" && <p className="trace-answer">{cleanCustomerAnswer(data.answer)}</p>}
         {elapsed && <p>Actual · {elapsed}</p>}
       </>
     );
@@ -421,7 +422,7 @@ export function ExecutionTrace({ run, guide }: { run: PresentationRun; guide: Te
               <strong>Answer</strong>
               <b>DONE</b>
             </header>
-            <p className="trace-answer">{String(run.result.answer ?? "")}</p>
+            <p className="trace-answer">{cleanCustomerAnswer(run.result.answer)}</p>
           </article>
         )}
       </div>

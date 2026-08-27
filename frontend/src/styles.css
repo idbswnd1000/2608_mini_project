@@ -175,9 +175,7 @@ button:disabled {
   flex-wrap: wrap;
 }
 
-.mic-section-heading span,
-.mic-file-picker span,
-.mic-file-meta span {
+.mic-section-heading span {
   color: #657580;
   font-size: 12px;
   font-weight: 800;
@@ -222,30 +220,6 @@ button:disabled {
   line-height: 1.4;
 }
 
-.mic-file-picker,
-.mic-file-meta {
-  display: grid;
-  gap: 6px;
-}
-
-.mic-file-picker input {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid #d3dbe2;
-  border-radius: 7px;
-  background: #f8fafb;
-  padding: 10px;
-  color: #263a49;
-}
-
-.mic-file-meta strong {
-  min-width: 0;
-  color: #183955;
-  font-size: 15px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
 .mic-error {
   border-left: 4px solid #a23c2d;
   background: #fff4f2;
@@ -268,13 +242,9 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-.mic-actions-single {
-  grid-template-columns: 1fr;
-}
-
 .command-test-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: stretch;
 }
@@ -326,10 +296,6 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-.command-test-result .command-test-message {
-  border-left: 4px solid #2e6f95;
-}
-
 @media (max-width: 520px) {
   .mic-page {
     padding: 12px;
@@ -347,11 +313,7 @@ button:disabled {
   }
 
   .command-test-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .command-test-form input {
-    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
   }
 
   .command-test-form button {

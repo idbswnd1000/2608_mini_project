@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { FormEvent } from "react";
 import {
   extractBrowserCommandSegment,
   matchBrowserLectureCommand,
@@ -15,7 +15,7 @@ type BrowserSpeechRecognition = {
   onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null;
   onerror: ((event: BrowserSpeechRecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
-  start: (audioTrack?: MediaStreamTrack) => void;
+  start: () => void;
   stop: () => void;
 };
 
@@ -38,11 +38,6 @@ type BrowserSpeechRecognitionErrorEvent = {
 
 type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
 
-type CapturableAudioElement = HTMLAudioElement & {
-  captureStream?: () => MediaStream;
-  mozCaptureStream?: () => MediaStream;
-};
-
 declare global {
   interface Window {
     SpeechRecognition?: SpeechRecognitionConstructor;
@@ -51,57 +46,40 @@ declare global {
 }
 
 type MicStatus = "off" | "listening" | "command" | "error";
-type FileStatus = "idle" | "loading" | "listening" | "command" | "no-command" | "error";
 type CommandTestResult = {
   input: string;
   normalized: string;
   segment: string;
   action: LectureAction | null;
-  message: string | null;
 };
 
-const ACCEPTED_AUDIO_EXTENSIONS = [".mp3", ".m4a", ".wav", ".webm", ".ogg"];
-const ACCEPTED_AUDIO_INPUT = ACCEPTED_AUDIO_EXTENSIONS.join(",");
-const MAX_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 const RECENT_TRANSCRIPT_MAX_CHARS = 220;
 const COMMAND_LOCK_MS = 2800;
 const RESTART_DELAY_MS = 350;
 const MAX_TRANSIENT_RESTART_ATTEMPTS = 3;
-const LIVE_TRANSCRIPT_INACTIVITY_MS = 5000;
+const LIVE_TRANSCRIPT_INACTIVITY_MS = 2000;
 
 export function MicrophonePage() {
   const [connection, setConnection] = useState<"unknown" | "connected" | "disconnected">("unknown");
   const [micStatus, setMicStatus] = useState<MicStatus>("off");
-  const [fileStatus, setFileStatus] = useState<FileStatus>("idle");
   const [speechSupported, setSpeechSupported] = useState<"unknown" | "supported" | "unsupported">("unknown");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [liveFinalTranscript, setLiveFinalTranscript] = useState("");
   const [liveInterimTranscript, setLiveInterimTranscript] = useState("");
   const [liveDetectedCommand, setLiveDetectedCommand] = useState<LectureAction | null>(null);
-  const [fileFinalTranscript, setFileFinalTranscript] = useState("");
-  const [fileInterimTranscript, setFileInterimTranscript] = useState("");
-  const [fileDetectedCommand, setFileDetectedCommand] = useState<LectureAction | null>(null);
   const [commandTestInput, setCommandTestInput] = useState("");
   const [commandTestResult, setCommandTestResult] = useState<CommandTestResult | null>(null);
-  const [commandTestSending, setCommandTestSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
-  const fileRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
-  const fileAudioRef = useRef<HTMLAudioElement | null>(null);
   const shouldListenRef = useRef(false);
   const recognitionRunningRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
   const restartAttemptRef = useRef(0);
   const liveInactivityTimerRef = useRef<number | null>(null);
   const liveFinalTranscriptRef = useRef("");
-  const fileFinalTranscriptRef = useRef("");
   const liveCommandFinalBufferRef = useRef("");
   const liveCommandInterimRef = useRef("");
-  const fileCommandFinalBufferRef = useRef("");
-  const fileCommandInterimRef = useRef("");
   const liveLastFinalResultIndexRef = useRef(-1);
-  const fileLastFinalResultIndexRef = useRef(-1);
-  const fileDetectedCommandRef = useRef<LectureAction | null>(null);
   const commandLockedUntilRef = useRef(0);
 
   useEffect(() => {
@@ -112,115 +90,8 @@ export function MicrophonePage() {
 
     return () => {
       stopMicrophone();
-      cleanupFileRecognition();
     };
   }, []);
-
-  async function analyzeVoiceFile() {
-    if (!selectedFile) {
-      setError("Please select an audio file first.");
-      setFileStatus("error");
-      return;
-    }
-
-    const validationError = validateAudioFile(selectedFile);
-    if (validationError) {
-      setError(validationError);
-      setFileStatus("error");
-      return;
-    }
-
-    cleanupFileRecognition();
-    fileFinalTranscriptRef.current = "";
-    fileCommandFinalBufferRef.current = "";
-    fileCommandInterimRef.current = "";
-    fileLastFinalResultIndexRef.current = -1;
-    fileDetectedCommandRef.current = null;
-    setFileFinalTranscript("");
-    setFileInterimTranscript("");
-    setFileDetectedCommand(null);
-    setFileStatus("loading");
-    setError(null);
-
-    const recognition = createFileRecognition();
-    if (!recognition) {
-      setSpeechSupported("unsupported");
-      setError("Browser speech recognition is not supported.");
-      setFileStatus("error");
-      return;
-    }
-
-    const audio = new Audio(URL.createObjectURL(selectedFile)) as CapturableAudioElement;
-    fileAudioRef.current = audio;
-    audio.muted = true;
-
-    audio.oncanplay = () => {
-      try {
-        const captureStream = audio.captureStream || audio.mozCaptureStream;
-        if (!captureStream) {
-          throw new Error("This browser cannot expose audio files as speech-recognition tracks.");
-        }
-        const stream = captureStream.call(audio);
-        const audioTrack = stream.getAudioTracks()[0];
-        if (!audioTrack) {
-          throw new Error("No audio track was found in the selected file.");
-        }
-        fileRecognitionRef.current = recognition;
-        recognition.start(audioTrack);
-        void audio.play();
-        setFileStatus("listening");
-      } catch (reason) {
-        cleanupFileRecognition();
-        setError(reason instanceof Error ? reason.message : "Browser file speech recognition failed to start.");
-        setFileStatus("error");
-      }
-    };
-
-    audio.onerror = () => {
-      cleanupFileRecognition();
-      setError("The selected audio file could not be loaded by this browser.");
-      setFileStatus("error");
-    };
-  }
-
-  function onFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setSelectedFile(file);
-    fileFinalTranscriptRef.current = "";
-    fileCommandFinalBufferRef.current = "";
-    fileCommandInterimRef.current = "";
-    fileLastFinalResultIndexRef.current = -1;
-    fileDetectedCommandRef.current = null;
-    setFileFinalTranscript("");
-    setFileInterimTranscript("");
-    setFileDetectedCommand(null);
-    setFileStatus("idle");
-    setError(null);
-  }
-
-  function validateAudioFile(file: File) {
-    const lowerName = file.name.toLowerCase();
-    const isSupported = ACCEPTED_AUDIO_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
-    if (!isSupported) {
-      return "Unsupported audio file. Use mp3, m4a, wav, webm, or ogg.";
-    }
-    if (file.size > MAX_AUDIO_FILE_BYTES) {
-      return "Audio file is too large. Use a file under 25 MB.";
-    }
-    if (file.size === 0) {
-      return "Audio file is empty.";
-    }
-    return null;
-  }
-
-  function fileStatusLabel() {
-    if (fileStatus === "loading") return "Loading";
-    if (fileStatus === "listening") return "Recognizing";
-    if (fileStatus === "command") return "Command detected";
-    if (fileStatus === "no-command") return "No lecture command detected";
-    if (fileStatus === "error") return "Error";
-    return "Idle";
-  }
 
   function statusLabel() {
     if (micStatus === "listening") return "Listening";
@@ -315,27 +186,6 @@ export function MicrophonePage() {
     return recognition;
   }
 
-  function createFileRecognition() {
-    const Recognition = getSpeechRecognitionConstructor();
-    if (!Recognition) return null;
-
-    const recognition = new Recognition();
-    recognition.lang = "ko-KR";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.onresult = handleFileSpeechResult;
-    recognition.onerror = (event) => {
-      setError(event.message || `File speech recognition error: ${event.error}`);
-      setFileStatus("error");
-    };
-    recognition.onend = () => {
-      setFileStatus(fileDetectedCommandRef.current ? "command" : "no-command");
-      cleanupFileRecognition(false);
-    };
-
-    return recognition;
-  }
-
   function startRecognition() {
     if (recognitionRunningRef.current) return;
 
@@ -401,24 +251,6 @@ export function MicrophonePage() {
     recognitionRef.current = null;
     setLiveInterimTranscript("");
     setMicStatus("off");
-  }
-
-  function cleanupFileRecognition(stopRecognition = true) {
-    const recognition = fileRecognitionRef.current;
-    if (recognition) {
-      recognition.onend = null;
-      if (stopRecognition) {
-        recognition.stop();
-      }
-    }
-    fileRecognitionRef.current = null;
-
-    const audio = fileAudioRef.current;
-    if (audio) {
-      audio.pause();
-      URL.revokeObjectURL(audio.src);
-    }
-    fileAudioRef.current = null;
   }
 
   function handleSpeechResult(event: BrowserSpeechRecognitionEvent) {
@@ -495,68 +327,6 @@ export function MicrophonePage() {
       });
   }
 
-  function handleFileSpeechResult(event: BrowserSpeechRecognitionEvent) {
-    const finalPieces: string[] = [];
-    const interimPieces: string[] = [];
-    for (let index = event.resultIndex; index < event.results.length; index += 1) {
-      const result = event.results[index];
-      const transcript = result?.[0]?.transcript?.trim();
-      if (!transcript) {
-        continue;
-      }
-      if (result.isFinal) {
-        if (index <= fileLastFinalResultIndexRef.current) {
-          continue;
-        }
-        fileLastFinalResultIndexRef.current = index;
-        finalPieces.push(transcript);
-      } else {
-        interimPieces.push(transcript);
-      }
-    }
-
-    const finalText = finalPieces.join(" ").trim();
-    const interimText = interimPieces.join(" ").trim();
-
-    if (interimText) {
-      setFileInterimTranscript(interimText);
-      fileCommandInterimRef.current = interimText;
-    } else if (finalText) {
-      setFileInterimTranscript("");
-      fileCommandInterimRef.current = "";
-    }
-
-    if (!finalText && !interimText) return;
-
-    if (finalText) {
-      fileFinalTranscriptRef.current = appendTranscript(fileFinalTranscriptRef.current, finalText);
-      fileCommandFinalBufferRef.current = appendTranscript(
-        fileCommandFinalBufferRef.current,
-        finalText,
-        RECENT_TRANSCRIPT_MAX_CHARS
-      );
-      setFileFinalTranscript(fileFinalTranscriptRef.current);
-    }
-
-    const transcript = displayTranscript(fileCommandFinalBufferRef.current, fileCommandInterimRef.current).slice(
-      -RECENT_TRANSCRIPT_MAX_CHARS
-    );
-
-    const action = matchBrowserLectureCommand(transcript);
-    if (!action || shouldSuppressCommand(action, transcript)) return;
-
-    fileCommandFinalBufferRef.current = "";
-    fileCommandInterimRef.current = "";
-    setFileInterimTranscript("");
-    fileDetectedCommandRef.current = action;
-    setFileDetectedCommand(action);
-    setFileStatus("command");
-    void sendLectureCommand(action, transcript).catch((reason) => {
-      setError(reason instanceof Error ? reason.message : "Lecture command failed");
-      setFileStatus("error");
-    });
-  }
-
   function shouldSuppressCommand(action: LectureAction, transcript: string) {
     void action;
     void transcript;
@@ -578,57 +348,23 @@ export function MicrophonePage() {
     return `${finalTranscript} ${interimTranscript}`.replace(/\s+/g, " ").trim();
   }
 
-  function evaluateCommandTestInput(input: string, message: string | null = null) {
+  function evaluateCommandTestInput(input: string) {
     const trimmedInput = input.trim();
     const result: CommandTestResult = {
       input: trimmedInput,
       normalized: normalizeSpeechText(trimmedInput),
       segment: extractBrowserCommandSegment(trimmedInput),
       action: matchBrowserLectureCommand(trimmedInput),
-      message,
     };
     setCommandTestResult(result);
-    return result;
-  }
-
-  function confirmCommandTest() {
-    evaluateCommandTestInput(commandTestInput);
   }
 
   function submitCommandTest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    confirmCommandTest();
-  }
-
-  async function executeCommandTest() {
-    const result = evaluateCommandTestInput(commandTestInput);
-    if (!result.action) {
-      setCommandTestResult({
-        ...result,
-        message: "명령을 인식하지 못했습니다.",
-      });
-      return;
-    }
-
-    setCommandTestSending(true);
-    try {
-      await sendLectureCommand(result.action, result.input);
-      setCommandTestResult({
-        ...result,
-        message: "명령을 전송했습니다.",
-      });
-    } catch (reason) {
-      setCommandTestResult({
-        ...result,
-        message: reason instanceof Error ? reason.message : "명령 전송에 실패했습니다.",
-      });
-    } finally {
-      setCommandTestSending(false);
-    }
+    evaluateCommandTestInput(commandTestInput);
   }
 
   const liveDisplayTranscript = displayTranscript(liveFinalTranscript, liveInterimTranscript);
-  const fileDisplayTranscript = displayTranscript(fileFinalTranscript, fileInterimTranscript);
   const isMicOn = micStatus === "listening" || micStatus === "command";
 
   return (
@@ -659,10 +395,6 @@ export function MicrophonePage() {
           <div>
             <dt>Detected Command</dt>
             <dd>{liveDetectedCommand ?? "-"}</dd>
-          </div>
-          <div>
-            <dt>File Status</dt>
-            <dd>{fileStatusLabel()}</dd>
           </div>
         </dl>
 
@@ -698,7 +430,7 @@ export function MicrophonePage() {
         <section className="mic-section command-test-section">
           <div className="mic-section-heading">
             <span>COMMAND TEST</span>
-            <p>Test the current browser command matcher without using the microphone.</p>
+            <p>키워드가 어떤 명령으로 인식되는지만 확인합니다.</p>
           </div>
           <form className="command-test-form" onSubmit={submitCommandTest}>
             <input
@@ -708,9 +440,6 @@ export function MicrophonePage() {
               placeholder="네이버로 넘어가겠습니다"
             />
             <button type="submit">명령 확인</button>
-            <button type="button" onClick={executeCommandTest} disabled={commandTestSending}>
-              {commandTestSending ? "전송 중" : "명령 실행"}
-            </button>
           </form>
           <div className="command-test-result">
             <div>
@@ -726,43 +455,9 @@ export function MicrophonePage() {
               <p>{commandTestResult?.segment || "-"}</p>
             </div>
             <div>
-              <span>Action</span>
+              <span>인식 결과</span>
               <p>{commandTestResult ? commandTestResult.action ?? "명령 없음" : "-"}</p>
             </div>
-            {commandTestResult?.message && (
-              <div className="command-test-message">
-                <span>상태</span>
-                <p>{commandTestResult.message}</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="mic-section">
-          <div className="mic-section-heading">
-            <span>VOICE FILE</span>
-            <p>Recognize an uploaded file in the browser.</p>
-          </div>
-          <label className="mic-file-picker">
-            <span>Audio File</span>
-            <input type="file" accept={ACCEPTED_AUDIO_INPUT} onChange={onFileChange} />
-          </label>
-          <div className="mic-file-meta">
-            <span>Selected</span>
-            <strong>{selectedFile ? selectedFile.name : "-"}</strong>
-          </div>
-          <div className="mic-actions mic-actions-single">
-            <button type="button" onClick={analyzeVoiceFile} disabled={fileStatus === "loading" || fileStatus === "listening"}>
-              Analyze Voice
-            </button>
-          </div>
-          <div className="mic-transcript">
-            <span>Transcript</span>
-            <p>{fileDisplayTranscript ? `"${fileDisplayTranscript}"` : "-"}</p>
-          </div>
-          <div className="mic-transcript">
-            <span>Detected Command</span>
-            <p>{fileDetectedCommand ?? "-"}</p>
           </div>
         </section>
 

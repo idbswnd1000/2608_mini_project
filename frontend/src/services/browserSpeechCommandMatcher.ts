@@ -23,7 +23,7 @@ const COMMAND_DESTINATIONS: Array<{
 
   {
     action: "GO_AGENTIC_MULTIMODAL",
-    keywords: ["결합모델"],
+    keywords: ["결합모델", "결함", "결함모델", "결합"],
   },
 
   {
@@ -43,6 +43,7 @@ const COMMAND_DESTINATIONS: Array<{
       "레그비교",
       "rag비교",
       "구조비교",
+      "부조",
     ],
   },
 
@@ -55,6 +56,7 @@ const COMMAND_DESTINATIONS: Array<{
       "어드밴스",
       "어드벤스드",
       "어드벤스",
+      "어드밴스트",
     ],
   },
 
@@ -66,6 +68,11 @@ const COMMAND_DESTINATIONS: Array<{
       // STT 오인식 대응
       "에이전트",
       "에이전티",
+      "에이전팅",
+      "에이전틱레그",
+      "에이전트레그",
+      "에이전티렉",
+      "에이전트그레그",
     ],
   },
 
@@ -74,14 +81,17 @@ const COMMAND_DESTINATIONS: Array<{
     keywords: [
       "naive",
       "네이브",
+      "네이버",
+      "네이비",
       "네이블",
       "네이브렉",
       "네이브래그",
       "네이브레그",
       "네이블래그",
-
-      // STT 오인식 대응
-      "네이버",
+      "에이브",
+      "레이브",
+      "에이버",
+      "레이버",
     ],
   },
 ];

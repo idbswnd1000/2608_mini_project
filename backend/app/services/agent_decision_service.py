@@ -6,6 +6,7 @@ from typing import Any
 from openai import OpenAI, OpenAIError
 
 from app.core.config import settings
+from app.services.openai_response_options import deterministic_response_options
 
 
 AGENT_DECISION_PROMPT = """
@@ -83,7 +84,7 @@ def _make_decision_sync(question: str) -> AgentDecisionResult:
         instructions=AGENT_DECISION_PROMPT,
         input=question,
         max_output_tokens=160,
-        temperature=0,
+        **deterministic_response_options(settings.openai_model),
     )
     usage = response.usage
 

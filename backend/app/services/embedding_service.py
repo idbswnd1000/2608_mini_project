@@ -1,3 +1,4 @@
+import asyncio
 from functools import lru_cache
 
 from sentence_transformers import SentenceTransformer
@@ -35,3 +36,7 @@ def embed_texts(texts: list[str], batch_size: int = 32) -> list[list[float]]:
         vectors[index] = [float(value) for value in vector]
 
     return vectors
+
+
+async def embed_texts_async(texts: list[str], batch_size: int = 32) -> list[list[float]]:
+    return await asyncio.to_thread(embed_texts, texts, batch_size)

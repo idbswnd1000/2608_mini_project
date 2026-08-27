@@ -21,14 +21,28 @@ NAIVE_KEYWORDS = (
     "naive",
     "네이브",
     "네이버",
+    "네이비",
     "네이블",
     "네이브렉",
     "네이브래그",
     "네이브레그",
     "네이블래그",
+    "에이브",
+    "레이브",
+    "에이버",
+    "레이버",
 )
-ADVANCED_KEYWORDS = ("어드밴스드", "어드밴스", "어드벤스드", "어드벤스")
-AGENTIC_KEYWORDS = ("에이전틱", "에이전트", "에이전티")
+ADVANCED_KEYWORDS = ("어드밴스드", "어드밴스", "어드벤스드", "어드벤스", "어드밴스트")
+AGENTIC_KEYWORDS = (
+    "에이전틱",
+    "에이전트",
+    "에이전티",
+    "에이전팅",
+    "에이전틱레그",
+    "에이전트레그",
+    "에이전티렉",
+    "에이전트그레그",
+)
 MULTIMODAL_KEYWORDS = ("멀티모달", "멀티모델")
 RAG_COMPARISON_KEYWORDS = (
     "답변비교",
@@ -38,8 +52,8 @@ RAG_COMPARISON_KEYWORDS = (
     "세가지질문비교",
     "세가지질문답변",
 )
-COMPARISON_KEYWORDS = ("래그비교", "레그비교", "rag비교", "구조비교")
-AGENTIC_MULTIMODAL_KEYWORDS = ("결합모델",)
+COMPARISON_KEYWORDS = ("래그비교", "레그비교", "rag비교", "구조비교", "부조")
+AGENTIC_MULTIMODAL_KEYWORDS = ("결합모델", "결함", "결함모델", "결합")
 PAGE_KEYWORDS = (
     *RAG_COMPARISON_KEYWORDS,
     *COMPARISON_KEYWORDS,

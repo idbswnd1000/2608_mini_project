@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cleanCustomerAnswer } from "../../services/answerFormatting";
 import { RagResponse, RagType, runRagDemo } from "../../services/api";
 
 const ragTypes: RagType[] = ["naive", "advanced", "agentic"];
@@ -9,6 +10,7 @@ export function LiveDemo() {
   const [result, setResult] = useState<RagResponse | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const answer = cleanCustomerAnswer(result?.answer);
 
   async function handleRunDemo() {
     setIsRunning(true);
@@ -47,7 +49,7 @@ export function LiveDemo() {
         <div className="demo-result">
           <div>
             <span>Answer</span>
-            <p>{result.answer}</p>
+            <p>{answer}</p>
           </div>
           <div className="demo-metrics">
             <strong>{result.metrics.total_ms}ms</strong>
